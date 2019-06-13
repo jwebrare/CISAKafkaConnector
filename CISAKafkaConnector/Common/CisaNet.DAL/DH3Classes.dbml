@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="DH32_SQL" Class="DH3ClassesDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=W7-VPC\SQLEXPRESS;Initial Catalog=DH33_SQL;User ID=sa" SettingsObjectName="CisaNet.DAL.My.MySettings" SettingsPropertyName="DH32_SQLConnectionString" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.Guest" Member="Guest">
+    <Type Name="Guest">
+      <Column Name="IDGuest" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Id_Room" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="IndxCamera" Type="System.Int16" DbType="SmallInt NOT NULL" CanBeNull="false" />
+      <Column Name="CodePass" Type="System.Double" DbType="Float NOT NULL" CanBeNull="false" />
+      <Column Name="NrBadge" Type="System.Int16" DbType="SmallInt NOT NULL" CanBeNull="false" />
+      <Column Name="Family" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="bFamily" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="bOneShot" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="CodeReal" Type="System.Double" DbType="Float" CanBeNull="true" />
+      <Column Name="GuestCode" Type="System.Int64" DbType="BigInt" CanBeNull="true" />
+      <Column Name="bShare" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Personal" Member="Personal">
+    <Type Name="Personal">
+      <Column Name="IDPersonal" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="IDPersonalGroup" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Code" Type="System.Double" DbType="Float NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.ROOM" Member="ROOM">
+    <Type Name="ROOM">
+      <Column Name="IDRoom" Type="System.Int32" DbType="Int NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="IDPlant" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="IDSite" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="IDDriver" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="IDRoomType" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Numero" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Address" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="StepKey" Type="System.Int16" DbType="SmallInt NOT NULL" CanBeNull="false" />
+      <Column Name="IDDefaultData" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Location" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="CheckState" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="Fault" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="SuiteState" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="ArrivalDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="DepDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="IDSuite" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="IDRoomFrontDoor" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="CheckOutFlag" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="CheckOutMode" Type="System.Int16" DbType="SmallInt NOT NULL" CanBeNull="false" />
+      <Column Name="CheckOutSetAtTmpo" Type="System.String" DbType="VarChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="CheckOutDT" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="BadgeType" Type="System.Int16" DbType="SmallInt NOT NULL" CanBeNull="false" />
+      <Column Name="ResetSuiteCheckOut" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="HideRoom" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="IDLinkedRoom" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.RoomService" Member="RoomService">
+    <Type Name="RoomService">
+      <Column Name="IDRoomService" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="IDRoom" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ServiceCode" Type="System.Double" DbType="Float NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.PersonalGroup" Member="PersonalGroup">
+    <Type Name="PersonalGroup">
+      <Column Name="IDPersonalGroup" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="IDService" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Code" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.CommonArea" Member="CommonAreas">
+    <Type Name="CommonArea">
+      <Column Name="IDCommArea" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="IDRoom" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="IDGuest" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+</Database>

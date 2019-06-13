@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="CISAKafkaConnector.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="BootstrapServers" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">192.168.1.140:9092</Value>
+    </Setting>
+    <Setting Name="SecurityProtocol" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaslMechanism" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaslPassword" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SaslUsername" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AutoOffsetReset" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="EncoderId" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">ACSACR122_1522</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

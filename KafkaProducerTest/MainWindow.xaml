@@ -1,0 +1,102 @@
+﻿<Window x:Class="KafkaProducerTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KafkaProducerTest"
+        mc:Ignorable="d"
+        Title="Kafka Message Producer" Style="{StaticResource CustomWindow}" Height="362.642" Width="511.006">
+    <Grid Margin="0,0,-12,0">
+        <Label
+            Content="Guest/Staff Name"
+            HorizontalAlignment="Left"
+            Margin="10,10,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Width="100"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="10,41,0,0" Name="textBlock1" VerticalAlignment="Top" Width="100
+                 " RenderTransformOrigin="0.017,2.287" TextChanged="textBlock1_TextChanged" Text="Ivan" />
+        <Button Content="Send Message"
+                HorizontalAlignment="Left"
+                Margin="380,156,0,0"
+                VerticalAlignment="Top"
+                Width="100
+                "
+                Click="button1_Click" Height="23"/>
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="131,41,0,0" x:Name="textBlock2" VerticalAlignment="Top" Width="100" TextChanged="textBlock2_TextChanged" Text="101" />
+        <Label
+            Content="Room"
+            HorizontalAlignment="Left"
+            Margin="131,8,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Width="100"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="252,41,0,0" x:Name="textBlock3" VerticalAlignment="Top" Width="100" TextChanged="textBlock3_TextChanged" />
+        <Label
+            Content="Zone"
+            HorizontalAlignment="Left"
+            Margin="252,8,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Width="100"
+            />
+        <TextBox
+            x:Name="textBlock4"
+            Width="470"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            TextWrapping="Wrap"
+            AcceptsReturn="True"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            Margin="10,184,0,0" Height="123" TextChanged="textBlock4_TextChanged"/>
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="10,108,0,0" x:Name="textBlock5" VerticalAlignment="Top" Width="100" TextChanged="textBlock5_TextChanged" Text="CISA" />
+        <Label
+            Content="Access Type"
+            HorizontalAlignment="Left"
+            Margin="10,77,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Width="100"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="131,108,0,0" x:Name="textBlock6" VerticalAlignment="Top" Width="100" TextChanged="textBlock6_TextChanged" Text="" />
+        <Label
+            Content="Extra spaces"
+            HorizontalAlignment="Left"
+            Margin="131,77,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="252,108,0,0" x:Name="textBlock7" VerticalAlignment="Top" Width="100" TextChanged="textBlock7_TextChanged" Text="" />
+        <Label
+            Content="Category (groups)"
+            HorizontalAlignment="Left"
+            Margin="252,77,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="380,41,0,0" x:Name="textBlock8" VerticalAlignment="Top" Width="100" TextChanged="textBlock8_TextChanged" Text="" />
+        <Label
+            Content="Checkout hours&#xD;&#xA;"
+            HorizontalAlignment="Left"
+            Margin="380,10,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Height="26"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="380,108,0,0" x:Name="textBlock9" VerticalAlignment="Top" Width="100" TextChanged="textBlock9_TextChanged" Text="ACSACR122_1522" />
+        <Label
+            Content="DeviceId"
+            HorizontalAlignment="Left"
+            Margin="380,77,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Width="100"
+            />
+
+    </Grid>
+</Window>

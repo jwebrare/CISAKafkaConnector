@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CISAKafkaConnector", "CISAKafkaConnector\CISAKafkaConnector.csproj", "{D4BAFB65-3D08-4E79-8AA2-35D386694B71}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{DF1BB89D-3DB1-4331-9C01-242E7F8962A6}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "CisaNet.Entity", "CISAKafkaConnector\Common\CisaNet.Entity\CisaNet.Entity.vbproj", "{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaProducerTest", "KafkaProducerTest\KafkaProducerTest.csproj", "{6759AC02-5AF8-4E19-94EB-82078625CCF2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Debug|x86.Build.0 = Debug|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Release|x86.ActiveCfg = Release|Any CPU
+		{D4BAFB65-3D08-4E79-8AA2-35D386694B71}.Release|x86.Build.0 = Release|Any CPU
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Debug|x86.ActiveCfg = Debug|x86
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Debug|x86.Build.0 = Debug|x86
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Release|x86.ActiveCfg = Release|x86
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3}.Release|x86.Build.0 = Release|x86
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Debug|x86.Build.0 = Debug|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Release|x86.ActiveCfg = Release|Any CPU
+		{6759AC02-5AF8-4E19-94EB-82078625CCF2}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8B64BE9E-5B80-4D2F-93CB-9B5D0981EBE3} = {DF1BB89D-3DB1-4331-9C01-242E7F8962A6}
+	EndGlobalSection
+EndGlobal
