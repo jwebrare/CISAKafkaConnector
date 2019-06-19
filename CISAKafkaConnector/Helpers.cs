@@ -151,5 +151,11 @@ namespace CISAKafkaConnector
             return cvyearint - 88;
         }
 
+        // EPOCH to Date
+        public static DateTime epoch2string (int epoch)
+        {
+            return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToLocalTime().AddSeconds(epoch);
+        }
+
     }
 }

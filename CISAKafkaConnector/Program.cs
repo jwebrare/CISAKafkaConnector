@@ -250,12 +250,12 @@ namespace CISAKafkaConnector
                                     kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
                                     if (kmessage.payload.id != null)
                                     {
-                                        resultmessage = "{\"code\":\"card_readers_response\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"deviceId\":" + encoderID + ",\"id\":\"CISA\"}}";
-                                        p.BeginProduce("card_readers_response", new Message<Null, string> { Value = resultmessage }, handler);
+                                        resultmessage = "{\"code\":\"card_readers_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"deviceId\":\"" + encoderID + "\",\"type\":\"CISA\"}}";
+                                        p.BeginProduce("card_readers_result", new Message<Null, string> { Value = resultmessage }, handler);
                                         p.Flush(TimeSpan.FromSeconds(1));
 
-                                        Helpers.WriteLog($"Response '{resultmessage}' sent to card_readers_response topic.");
-                                        Console.WriteLine($"Response '{resultmessage}' sent to card_readers_response topic.");
+                                        Helpers.WriteLog($"Response '{resultmessage}' sent to card_readers_result topic.");
+                                        Console.WriteLine($"Response '{resultmessage}' sent to card_readers_result topic.");
                                     }
                                 }
                             } else
@@ -341,10 +341,14 @@ namespace CISAKafkaConnector
                 guestcard.cardtype = 4; // 4 - Staff Card
             }
 
-            // Provisional data for testing
+            // Provisional data for testing            
             csdateEnd.year_Renamed = csdateNow.year_Renamed;
             csdateEnd.month_Renamed = csdateNow.month_Renamed;
             csdateEnd.day_Renamed = 25;
+            /*DateTime endDate = Helpers.epoch2string(int.Parse(kmessage.payload.checkoutHours));
+            csdateEnd.year_Renamed = Convert.ToByte(sbyte.Parse(endDate.Year.ToString()));
+            csdateEnd.month_Renamed = Convert.ToByte(sbyte.Parse(endDate.Month.ToString()));
+            csdateEnd.day_Renamed = Convert.ToByte(sbyte.Parse(endDate.Day.ToString()));*/
 
 
             guestcard.accessid = kmessage.payload.accessId; // Guest/Employee name
