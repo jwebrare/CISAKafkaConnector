@@ -93,13 +93,13 @@ namespace CISAKafkaConnector
         //Declare Function CSEWaveModeEncode Lib "csemks32" (ByVal bufCard() As Byte, ByVal wavemodecarduid As String, ByVal wavemodecardheader As Byte, ByVal wavemodebufCard() As Byte) As Short
         // The wavemodebufCard output is ready to be written into an ST SRI512 or SRI4K (ISO 14443-B) card, always starting from block 07.
         // In order to adapt this card format to the Mifare blocks, a simple manipulation must be done. Read page 35 "ukdll16.pdf" doc.
-        
+
         public class CISAResult
         {
             public short rc { get; set; }
             public string errordesc { get; set; }
         }
-        
+
         public class Payload
         {
             public string accessType { get; set; }
@@ -120,6 +120,12 @@ namespace CISAKafkaConnector
         {
             public string code { get; set; }
             public Payload payload { get; set; }
+        }
+
+        public struct CardData
+        {
+            public CISAResult result { get; set; }
+            public KafkaMessage message { get; set; }
         }
 
         public static void Main(string[] args)
@@ -172,116 +178,143 @@ namespace CISAKafkaConnector
                     : $"Delivery Error: {r.Error.Reason}");
 
             var confC = new ConsumerConfig
+            {
+                GroupId = "testingCISA" + rvalue.ToString("000"),
+                BootstrapServers = bootstrapServers,
+                AutoOffsetReset = (AutoOffsetResetType)autoOffsetReset // By default 1 == AutoOffsetResetType.Earliest
+                                                                       //SecurityProtocol = SecurityProtocolType.Sasl_Plaintext,
+                                                                       //SaslMechanism = SaslMechanismType.ScramSha256,
+                                                                       //SaslPassword = "90ZRaduaUyRfNbzIJnXVIRlmkbTgfFn8",
+                                                                       //SaslUsername = "y6bxsy8c",
+                                                                       //
+                                                                       // Note: The AutoOffsetReset property determines the start offset in the event
+                                                                       // there are not yet any committed offsets for the consumer group for the
+                                                                       // topic/partitions of interest. By default, offsets are committed
+                                                                       // automatically, so in this example, consumption will only start from the
+                                                                       // earliest message in the topic 'write_request' the first time you run the program.
+            };
+
+            using (var c = new Consumer<Ignore, string>(confC))
+            {
+                c.Subscribe(kafkaTopics);
+
+                bool consuming = true;
+                // The client will automatically recover from non-fatal errors. You typically
+                // don't need to take any action unless an error is marked as fatal.
+                //c.OnError += (_, e) => consuming = !e.IsFatal;
+
+                // Raised on critical errors, e.g. connection failures or all brokers down.
+                c.OnError += (_, error)
+                =>
                 {
-                    GroupId = "testingCISA" + rvalue.ToString("000"),
-                    BootstrapServers = bootstrapServers,
-                    AutoOffsetReset = (AutoOffsetResetType)autoOffsetReset // By default 1 == AutoOffsetResetType.Earliest
-                    //SecurityProtocol = SecurityProtocolType.Sasl_Plaintext,
-                    //SaslMechanism = SaslMechanismType.ScramSha256,
-                    //SaslPassword = "90ZRaduaUyRfNbzIJnXVIRlmkbTgfFn8",
-                    //SaslUsername = "y6bxsy8c",
-                    //
-                    // Note: The AutoOffsetReset property determines the start offset in the event
-                    // there are not yet any committed offsets for the consumer group for the
-                    // topic/partitions of interest. By default, offsets are committed
-                    // automatically, so in this example, consumption will only start from the
-                    // earliest message in the topic 'write_request' the first time you run the program.
+                    Console.WriteLine($"Kafka error occured: {error.Reason}");
+                    Helpers.WriteLog($"Kafka error occured: {error.Reason}");
+                    consuming = !error.IsFatal;
                 };
 
-                using (var c = new Consumer<Ignore, string>(confC))
+                while (consuming)
                 {
-                    c.Subscribe(kafkaTopics);
-
-                    bool consuming = true;
-                    // The client will automatically recover from non-fatal errors. You typically
-                    // don't need to take any action unless an error is marked as fatal.
-                    //c.OnError += (_, e) => consuming = !e.IsFatal;
-
-                    // Raised on critical errors, e.g. connection failures or all brokers down.
-                    c.OnError += (_, error)
-                    => {
-                        Console.WriteLine($"Kafka error occured: {error.Reason}");
-                        Helpers.WriteLog($"Kafka error occured: {error.Reason}");
-                        consuming = !error.IsFatal;
-                    };
-
-                    while (consuming)
+                    try
                     {
-                        try
+                        var cr = c.Consume();
+                        var p = new Producer<Null, string>(confC);
+                        string resultmessage = "";
+                        var Topic = cr.Topic;
+
+                        if (cr.Value.IsValidJSON())
                         {
-                            var cr = c.Consume();
-                            var p = new Producer<Null, string>(confC);
-                            string resultmessage = "";
-                            var Topic = cr.Topic;
+                            if (cr.Topic == "write_request")
+                            { // Write Request
+                                kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
+                                if (kmessage.payload.accessType == "CISA" && kmessage.payload.deviceId == encoderID)
+                                { // Only Kafka messages tagged with "CISA" accessType are processed
+                                    string extraSpaces = (kmessage.payload.extraSpaces != null ? string.Join(",", kmessage.payload.extraSpaces) : null);
+                                    string groups = (kmessage.payload.groups != null ? string.Join(",", kmessage.payload.groups) : null);
 
-                            if (cr.Value.IsValidJSON())
-                            {
-                                if (cr.Topic == "write_request")
-                                { // Write Request
-                                    kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
-                                    if (kmessage.payload.accessType == "CISA" && kmessage.payload.deviceId == encoderID)
-                                    { // Only Kafka messages tagged with "CISA" accessType are processed
-                                        string extraSpaces = (kmessage.payload.extraSpaces != null ? string.Join(",", kmessage.payload.extraSpaces) : null);
-                                        string groups = (kmessage.payload.groups != null ? string.Join(",", kmessage.payload.groups) : null);
+                                    Console.WriteLine($"Code: '{kmessage.code}' Guest/Staff: '{kmessage.payload.accessId}' Room: '{kmessage.payload.room}' Zone: '{kmessage.payload.zone}' ExtraSpaces: '{extraSpaces}' Groups: '{groups}' at: '{cr.TopicPartitionOffset}'.");
+                                    Helpers.WriteLog($"Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
 
-                                        Console.WriteLine($"Code: '{kmessage.code}' Guest/Staff: '{kmessage.payload.accessId}' Room: '{kmessage.payload.room}' Zone: '{kmessage.payload.zone}' ExtraSpaces: '{extraSpaces}' Groups: '{groups}' at: '{cr.TopicPartitionOffset}'.");
-                                        Helpers.WriteLog($"Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
-
-                                        CISAResult result = CISACheck(kmessage, NFCDevice);
-                                        if (result.rc == Csemks32.CSE_SUCCESS)
-                                        {
-                                            resultmessage = "{\"code\":\"write_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}";
-                                        }
-                                        else
-                                        {
-                                            resultmessage = "{\"code\":\"write_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"error\":" + result.errordesc.ToString() + "}}";
-                                        }
-
-                                        p.BeginProduce("write_result", new Message<Null, string> { Value = resultmessage }, handler);
-                                        p.Flush(TimeSpan.FromSeconds(1));
-
-                                        Helpers.WriteLog($"Response '{resultmessage}' sent to write_result topic.");
-                                        Console.WriteLine($"Response '{resultmessage}' sent to write_result topic.");
-                                    }
-                                }
-
-                                if(cr.Topic == "card_readers_request")
-                                { // Card Reader Request
-                                    kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
-                                    if (kmessage.payload.id != null)
+                                    CISAResult result = CISACheck(kmessage, NFCDevice);
+                                    if (result.rc == Csemks32.CSE_SUCCESS)
                                     {
-                                        resultmessage = "{\"code\":\"card_readers_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"deviceId\":\"" + encoderID + "\",\"type\":\"CISA\"}}";
-                                        p.BeginProduce("card_readers_result", new Message<Null, string> { Value = resultmessage }, handler);
-                                        p.Flush(TimeSpan.FromSeconds(1));
-
-                                        Helpers.WriteLog($"Response '{resultmessage}' sent to card_readers_result topic.");
-                                        Console.WriteLine($"Response '{resultmessage}' sent to card_readers_result topic.");
+                                        resultmessage = "{\"code\":\"write_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}";
                                     }
+                                    else
+                                    {
+                                        resultmessage = "{\"code\":\"write_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"error\":" + result.errordesc.ToString() + "}}";
+                                    }
+
+                                    p.BeginProduce("write_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.Flush(TimeSpan.FromSeconds(1));
+
+                                    Helpers.WriteLog($"Response '{resultmessage}' sent to write_result topic.");
+                                    Console.WriteLine($"Response '{resultmessage}' sent to write_result topic.");
                                 }
-                            } else
-                            {
-                                Console.WriteLine($"ERROR Invalid JSON format - Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
-                                Helpers.WriteLog($"ERROR Invalid JSON format - Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
+                            }
+
+                            if (cr.Topic == "read_request")
+                            { // Read Request
+                                kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
+                                if (kmessage.payload.accessType == "CISA" && kmessage.payload.deviceId == encoderID)
+                                { // Only Kafka messages tagged with "CISA" accessType are processed
+
+                                    CardData cardData = CISAReadCard();
+                                    if (cardData.result.rc == Csemks32.CSE_SUCCESS)
+                                    {
+                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}"; // TODO: Add card information from "cardData.message"
+                                    }
+                                    else
+                                    {
+                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"error\":" + cardData.result.errordesc.ToString() + "}}";
+                                    }
+
+                                    p.BeginProduce("read_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.Flush(TimeSpan.FromSeconds(1));
+
+                                    Helpers.WriteLog($"Response '{resultmessage}' sent to read_result topic.");
+                                    Console.WriteLine($"Response '{resultmessage}' sent to read_result topic.");
+                                }
+                            }
+
+                            if (cr.Topic == "card_readers_request")
+                            { // Card Reader Request
+                                kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
+                                if (kmessage.payload.id != null)
+                                {
+                                    resultmessage = "{\"code\":\"card_readers_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"deviceId\":\"" + encoderID + "\",\"type\":\"CISA\"}}";
+                                    p.BeginProduce("card_readers_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.Flush(TimeSpan.FromSeconds(1));
+
+                                    Helpers.WriteLog($"Response '{resultmessage}' sent to card_readers_result topic.");
+                                    Console.WriteLine($"Response '{resultmessage}' sent to card_readers_result topic.");
+                                }
                             }
                         }
-                        catch (ConsumeException e)
+                        else
                         {
-                            Console.WriteLine($"Error occured: {e.Error.Reason}");
-                            Helpers.WriteLog($"Error occured: {e.Error.Reason}");
+                            Console.WriteLine($"ERROR Invalid JSON format - Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
+                            Helpers.WriteLog($"ERROR Invalid JSON format - Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
                         }
                     }
-
-                    // Ensure the consumer leaves the group cleanly and final offsets are committed.
-                    c.Close();
+                    catch (ConsumeException e)
+                    {
+                        Console.WriteLine($"Error occured: {e.Error.Reason}");
+                        Helpers.WriteLog($"Error occured: {e.Error.Reason}");
+                    }
                 }
-                //KAFKA
+
+                // Ensure the consumer leaves the group cleanly and final offsets are committed.
+                c.Close();
+            }
+            //KAFKA
 
         }
 
-        public static CISAResult CISACheck (KafkaMessage kmessage, NFC NFCDevice)
+        // Write To Card
+        public static CISAResult CISACheck(KafkaMessage kmessage, NFC NFCDevice)
         {
             /* CISA DLL Testing  */
-            CISAResult result = new CISAResult();        
+            CISAResult result = new CISAResult();
             short rc = 0;
 
             byte[] bufCard = new byte[400];  // 221
@@ -336,7 +369,8 @@ namespace CISAKafkaConnector
             if (kmessage.payload.room != null)
             {
                 guestcard.cardtype = 0; // 0 - Guest Card
-            } else
+            }
+            else
             {
                 guestcard.cardtype = 4; // 4 - Staff Card
             }
@@ -367,8 +401,9 @@ namespace CISAKafkaConnector
             guestcard.nhoursvalid = 0;
 
 
-            
-            if (guestcard.cardtype == 4) { // Staff's Card
+
+            if (guestcard.cardtype == 4)
+            { // Staff's Card
 
                 /*
                 guestcard.accesstime_Renamed.Initialize();
@@ -434,8 +469,9 @@ namespace CISAKafkaConnector
                     Console.WriteLine("Writing to Card ...");
                     NFCDevice.writeHotelFile(vbHelper.MidVB(vbHelper.Ascii2Hex(bufCardWavemode), 1, 36 * 2)); // Write Hotel File - 36 bytes
                     NFCDevice.writeKeyplanFile(vbHelper.MidVB(vbHelper.Ascii2Hex(bufCardWavemode), 36 * 2 + 1, 192 * 2)); // Write Keyplan File - 192 bytes
-                    NFCDevice.Close();                    
-                } else
+                    NFCDevice.Close();
+                }
+                else
                 {
                     Console.WriteLine("Card not availale.");
                     result.rc = -1;
@@ -443,7 +479,7 @@ namespace CISAKafkaConnector
 
                     return result;
                 }
-                
+
             }
             else
             {
@@ -456,6 +492,56 @@ namespace CISAKafkaConnector
             }
 
             return result;
+        }
+
+        // Read From Card
+        public static CardData CISAReadCard()
+        {
+            /* CISA DLL Testing  */
+            CardData cardData = new CardData();
+            
+            short rc = 0;
+            string serialnumberC2B = string.Format("{0,7}", ""); // 8 Chars fixed length string
+            serialnumberC2B = vbHelper.Hex2Bin(CardUID + "C15A13FF");
+
+            byte[] bufCard = new byte[400];  // 221
+            byte[] bufCardWavemode = new byte[400]; // 228
+
+            string accesstname1Read = string.Format("{0,6}", ""); // room/zone - first access target name
+            string accesstname2Read = string.Format("{0,6}", ""); // extraSpaces - second access target name
+            string accesstname3Read = string.Format("{0,6}", ""); // extraSpaces - third access target name
+            string accesstname4Read = string.Format("{0,6}", ""); // extraSpaces - fourth access target name
+            string accesstname5Read = string.Format("{0,6}", ""); // groups - category name
+            string warning = "";
+            Csemks32.card guestcard = new Csemks32.card();
+
+
+            rc = CSEWaveModeDecode(bufCardWavemode, serialnumberC2B, bufCard); // How can get bufCardWamode with valid information? Read it using DLL function or directly via NFC???
+
+            if (rc == Csemks32.CSE_SUCCESS)
+            {
+                rc = CSEBuffer2Card(bufCard, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcard, warning);
+                if (rc == Csemks32.CSE_SUCCESS)
+                {
+                    Console.WriteLine("Card readed correctly");
+                }
+                else
+                {
+                    cardData.result.rc = CSELoadErrNo();
+                    cardData.result.errordesc = "\"CSEBuffer2Card - ErrNo " + cardData.result.rc + "\"";
+                    Console.WriteLine("CSEBuffer2Card Failed");
+                    Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+                }
+            }
+            else
+            {
+                cardData.result.rc = CSELoadErrNo();
+                cardData.result.errordesc = "\"CSEWaveModeDecode Failed - ErrNo " + cardData.result.rc + "\"";
+                Console.WriteLine("CSEWaveModeDecode Failed");
+                Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+            }
+
+            return cardData;
         }
     }
 }
