@@ -97,6 +97,15 @@
             Padding="0,5"
             FontSize="12" Width="100"
             />
+        <Label
+            Content="Operation Type"
+            HorizontalAlignment="Left"
+            Margin="10,153,0,0"
+            VerticalAlignment="Top"
+            Padding="0,5"
+            FontSize="12" Width="100"
+            />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="110,153,0,0" x:Name="textBlock10" VerticalAlignment="Top" Width="100" TextChanged="textBlock10_TextChanged" Text="write_request" />
 
     </Grid>
 </Window>

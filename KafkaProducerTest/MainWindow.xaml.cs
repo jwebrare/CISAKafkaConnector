@@ -49,6 +49,7 @@ namespace KafkaProducerTest
             var p = new Producer<Null, string>(conf);
             string jsonmessage = "";
             string extraSpaces = null;
+            string operationType = "write_request"; // By default we will test a write_request
             if (!String.IsNullOrEmpty(textBlock6.Text)) // extraSpaces
             {                
                 string[] spaces= textBlock6.Text.Replace(" ", string.Empty).Split(',');
@@ -59,16 +60,25 @@ namespace KafkaProducerTest
                 }
             }
 
-
-            if (textBlock2.Text != "") { // room
-                jsonmessage = "{\"code\":\"write_request\",\"payload\":{\"accessType\":\"" + textBlock5.Text + "\",\"deviceId\":\"" + textBlock9.Text + "\",\"accessId\":\"" + textBlock1.Text + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(textBlock8.Text) ? "\""+textBlock8.Text+ "\"" : "null" ) + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces.TrimEnd(',') + "]" : "null") + ",\"groups\":" + (!String.IsNullOrEmpty(textBlock7.Text) ? "[\"" + textBlock7.Text + "\"]" : "null" ) + ",\"hotelName\":null,\"id\":\"" + DateTime.Now.ToString("ddMMyyyyHHmmss") + "\",\"mac\":null,\"room\":" + textBlock2.Text + ",\"zone\":null}}";
-            } else { // zone
-                jsonmessage = "{\"code\":\"write_request\",\"payload\":{\"accessType\":\"" + textBlock5.Text + "\",\"deviceId\":\"" + textBlock9.Text + "\",\"accessId\":\"" + textBlock1.Text + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(textBlock8.Text) ? "\"" + textBlock8.Text + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces.TrimEnd(',') + "]" : "null") + ",\"groups\":" + (!String.IsNullOrEmpty(textBlock7.Text) ? "[\"" + textBlock7.Text + "\"]" : "null") + ",\"hotelName\":null,\"id\":\"" + DateTime.Now.ToString("ddMMyyyyHHmmss") + "\",\"mac\":null,\"room\":null,\"zone\":\"" + textBlock3.Text + "\"}}";
+            if (textBlock10.Text == "write_request") // Write request
+            {
+                if (textBlock2.Text != "")
+                { // room
+                    jsonmessage = "{\"code\":\"write_request\",\"payload\":{\"accessType\":\"" + textBlock5.Text + "\",\"deviceId\":\"" + textBlock9.Text + "\",\"accessId\":\"" + textBlock1.Text + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(textBlock8.Text) ? "\"" + textBlock8.Text + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces.TrimEnd(',') + "]" : "null") + ",\"groups\":" + (!String.IsNullOrEmpty(textBlock7.Text) ? "[\"" + textBlock7.Text + "\"]" : "null") + ",\"hotelName\":null,\"id\":\"" + DateTime.Now.ToString("ddMMyyyyHHmmss") + "\",\"mac\":null,\"room\":" + textBlock2.Text + ",\"zone\":null}}";
+                }
+                else
+                { // zone
+                    jsonmessage = "{\"code\":\"write_request\",\"payload\":{\"accessType\":\"" + textBlock5.Text + "\",\"deviceId\":\"" + textBlock9.Text + "\",\"accessId\":\"" + textBlock1.Text + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(textBlock8.Text) ? "\"" + textBlock8.Text + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces.TrimEnd(',') + "]" : "null") + ",\"groups\":" + (!String.IsNullOrEmpty(textBlock7.Text) ? "[\"" + textBlock7.Text + "\"]" : "null") + ",\"hotelName\":null,\"id\":\"" + DateTime.Now.ToString("ddMMyyyyHHmmss") + "\",\"mac\":null,\"room\":null,\"zone\":\"" + textBlock3.Text + "\"}}";
+                }
+            } else // Read request
+            {
+                operationType = "read_request";
+                jsonmessage = "{\"code\":\"read_request\",\"payload\":{\"accessType\":\"" + textBlock5.Text + "\",\"deviceId\":\"" + textBlock9.Text + "\",\"accessId\":\"" + textBlock1.Text + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(textBlock8.Text) ? "\"" + textBlock8.Text + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces.TrimEnd(',') + "]" : "null") + ",\"groups\":" + (!String.IsNullOrEmpty(textBlock7.Text) ? "[\"" + textBlock7.Text + "\"]" : "null") + ",\"hotelName\":null,\"id\":\"" + DateTime.Now.ToString("ddMMyyyyHHmmss") + "\",\"mac\":null,\"room\":null,\"zone\":null}}";
             }
-            p.BeginProduce("write_request", new Message<Null, string>
+            p.BeginProduce(operationType, new Message<Null, string>
             {
                 Value = jsonmessage
-            }, handler);            
+            }, handler);
             p.Flush(TimeSpan.FromSeconds(1)); // wait for up to 1 second for any inflight messages to be delivered.
         }
 
@@ -113,6 +123,11 @@ namespace KafkaProducerTest
         }
 
         private void textBlock9_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
+
+        private void textBlock10_TextChanged(object sender, TextChangedEventArgs e)
         {
 
         }

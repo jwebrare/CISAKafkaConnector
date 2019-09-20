@@ -120,12 +120,24 @@ namespace CISAKafkaConnector
         {
             public string code { get; set; }
             public Payload payload { get; set; }
+
+            public KafkaMessage()
+            {
+                this.code = "";
+                this.payload = new Payload();
+            }
         }
 
-        public struct CardData
+        public class CardData
         {
             public CISAResult result { get; set; }
             public KafkaMessage message { get; set; }
+
+            public CardData()
+            {
+                this.result = new CISAResult();
+                this.message = new KafkaMessage();
+            }
         }
 
         public static void Main(string[] args)
@@ -169,7 +181,7 @@ namespace CISAKafkaConnector
             Random rand = new Random();
             int rvalue = rand.Next(1000);
 
-            kafkaTopics = new List<string>() { "write_request", "card_readers_request" };
+            kafkaTopics = new List<string>() { "write_request", "read_request", "card_readers_request" };
             KafkaMessage kmessage;
 
             Action<DeliveryReportResult<Null, string>> handler = r =>
@@ -258,10 +270,11 @@ namespace CISAKafkaConnector
                                 if (kmessage.payload.accessType == "CISA" && kmessage.payload.deviceId == encoderID)
                                 { // Only Kafka messages tagged with "CISA" accessType are processed
 
-                                    CardData cardData = CISAReadCard();
+                                    CardData cardData = CISAReadCard(NFCDevice);
                                     if (cardData.result.rc == Csemks32.CSE_SUCCESS)
                                     {
-                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}"; // TODO: Add card information from "cardData.message"
+                                        // resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}"; // TODO: Add card information from "cardData.message"
+                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"accessId\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"extraSpaces\":" + (cardData.message.payload.extraSpaces != null ? "[" + cardData.message.payload.extraSpaces + "]" : "null") + ",\"groups\":" + ((cardData.message.payload.groups) != null ? "[\"" + cardData.message.payload.groups + "\"]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + cardData.message.payload.room + ",\"zone\":null}}";
                                     }
                                     else
                                     {
@@ -464,6 +477,57 @@ namespace CISAKafkaConnector
                 Console.WriteLine("* KEYPLAN FILE: " + vbHelper.MidVB(vbHelper.Ascii2Hex(bufCardWavemode), 32 * 2 + 1, 188 * 2));
                 Console.WriteLine("* KEYPLAN FILE: " + Helpers.Mid(bufCardWavemode.Ascii2Hex(), 32 * 2 + 1, 188 * 2));
 
+                /* READ TEST
+                
+                CardData cardData = new CardData();
+                byte[] bufCardRead = new byte[400];
+                string accesstname1Read = string.Format("{0,6}", ""); // room/zone - first access target name
+                string accesstname2Read = string.Format("{0,6}", ""); // extraSpaces - second access target name
+                string accesstname3Read = string.Format("{0,6}", ""); // extraSpaces - third access target name
+                string accesstname4Read = string.Format("{0,6}", ""); // extraSpaces - fourth access target name
+                string accesstname5Read = string.Format("{0,6}", ""); // groups - category name
+                string warning = "";
+                Csemks32.card guestcardRead = new Csemks32.card();
+                Csemks32.card guestcardOp = new Csemks32.card();
+                Csemks32.cardsearch cardSearch = new Csemks32.cardsearch();
+                
+                string serialnumberB2C = string.Format("{0,7}", ""); // 8 Chars fixed length string
+                serialnumberB2C = vbHelper.Hex2Bin(CardUID + "C15A13FF");                 
+
+                rc = CSEWaveModeDecode(bufCardWavemode, serialnumberB2C, bufCardRead); // How can get bufCardWamode with valid information? Read it using DLL function or directly via NFC???
+
+                if (rc == Csemks32.CSE_SUCCESS)
+                {
+                    rc = CSEBuffer2Card(bufCardRead, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcardRead, warning);
+                    if (rc == Csemks32.CSE_SUCCESS)
+                    {
+                        // cardSearch.accessid = guestcardRead.accessid;
+                        cardSearch.accesstarget_Renamed.bed = 0;
+                        cardSearch.accesstarget_Renamed.id = 22;
+                        // cardSearch.accessid = serialnumberB2C;
+
+                        rc = CSESearchCard(ref guestcardOp, ref guestcardRead, ref cardSearch);
+                        if (rc == Csemks32.CSE_SUCCESS)
+                        {
+                            Console.WriteLine("Card readed correctly");
+                        } else {
+                            cardData.result.rc = CSELoadErrNo();
+                            cardData.result.errordesc = "\"CSESearchCard - ErrNo " + cardData.result.rc + "\"";
+                            Console.WriteLine("CSESearchCard Failed");
+                            Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+                        }
+                    }
+                    else
+                    {
+                        cardData.result.rc = CSELoadErrNo();
+                        cardData.result.errordesc = "\"CSEBuffer2Card - ErrNo " + cardData.result.rc + "\"";
+                        Console.WriteLine("CSEBuffer2Card Failed");
+                        Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+                    }
+                }
+                /* END READ TEST */
+
+
                 if (NFCDevice.connectCard())// establish connection to the card: you've declared this from previous post
                 {
                     Console.WriteLine("Writing to Card ...");
@@ -495,7 +559,7 @@ namespace CISAKafkaConnector
         }
 
         // Read From Card
-        public static CardData CISAReadCard()
+        public static CardData CISAReadCard(NFC NFCDevice)
         {
             /* CISA DLL Testing  */
             CardData cardData = new CardData();
@@ -515,7 +579,11 @@ namespace CISAKafkaConnector
             string warning = "";
             Csemks32.card guestcard = new Csemks32.card();
 
+            cardData.result.rc = Csemks32.CSE_SUCCESS; // Forcing Reading Result Successful
+            cardData.message.payload.accessId = "Guest name";
+            cardData.message.payload.room = "101";
 
+            /*
             rc = CSEWaveModeDecode(bufCardWavemode, serialnumberC2B, bufCard); // How can get bufCardWamode with valid information? Read it using DLL function or directly via NFC???
 
             if (rc == Csemks32.CSE_SUCCESS)
@@ -540,7 +608,7 @@ namespace CISAKafkaConnector
                 Console.WriteLine("CSEWaveModeDecode Failed");
                 Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
             }
-
+            */
             return cardData;
         }
     }
