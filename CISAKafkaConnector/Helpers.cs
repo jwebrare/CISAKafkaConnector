@@ -142,7 +142,7 @@ namespace CISAKafkaConnector
             return cvyearint;
         }
 
-        public static int YearPC2Cisa(ref int cvyear)
+        public static int YearPC2Cisa(int cvyear)
         {
             int cvyearint;
             cvyearint = cvyear;
@@ -152,9 +152,17 @@ namespace CISAKafkaConnector
         }
 
         // EPOCH to Date
-        public static DateTime epoch2string (int epoch)
+        public static DateTime epoch2date (double epoch)
         {
             return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).ToLocalTime().AddSeconds(epoch);
+        }
+
+        // Date to EPOCH        
+        public static double date2epoch (DateTime date)
+        {
+            DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            TimeSpan diff = date.ToUniversalTime() - origin;
+            return Math.Floor(diff.TotalSeconds);
         }
 
     }

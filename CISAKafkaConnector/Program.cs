@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Confluent.Kafka;
 using CisaNet.Entity;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace CISAKafkaConnector
 {
@@ -273,8 +274,31 @@ namespace CISAKafkaConnector
                                     CardData cardData = CISAReadCard(NFCDevice);
                                     if (cardData.result.rc == Csemks32.CSE_SUCCESS)
                                     {
-                                        // resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}"; // TODO: Add card information from "cardData.message"
-                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"accessId\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"extraSpaces\":" + (cardData.message.payload.extraSpaces != null ? "[" + cardData.message.payload.extraSpaces + "]" : "null") + ",\"groups\":" + ((cardData.message.payload.groups) != null ? "[\"" + cardData.message.payload.groups + "\"]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + cardData.message.payload.room + ",\"zone\":null}}";
+                                        string extraSpaces = null;
+                                        string groups = null;
+                                        if (cardData.message.payload.extraSpaces != null)
+                                        {
+                                            for (var i = 0; i < cardData.message.payload.extraSpaces.Count; i++)
+                                            {
+                                                extraSpaces = extraSpaces + "\"" + cardData.message.payload.extraSpaces[i] + "\"";
+                                                if (i != cardData.message.payload.extraSpaces.Count -1)
+                                                    {
+                                                        extraSpaces = extraSpaces + ","; // separator
+                                                    }
+                                            }
+                                        }
+                                        if (cardData.message.payload.groups != null)
+                                        {
+                                            for (var i = 0; i < cardData.message.payload.groups.Count; i++)
+                                            {
+                                                groups = groups + "\"" + cardData.message.payload.groups[i] + "\"";
+                                                if (i != cardData.message.payload.groups.Count - 1)
+                                                {
+                                                    groups = groups + ","; // separator
+                                                }
+                                            }
+                                        }
+                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"accessId\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces + "]" : "null") + ",\"groups\":" + ((groups) != null ? "[" + groups + "]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + cardData.message.payload.room + ",\"zone\":" + (cardData.message.payload.zone != null ? "\"" + cardData.message.payload.zone + "\"" : "null") + "}}";
                                     }
                                     else
                                     {
@@ -388,22 +412,25 @@ namespace CISAKafkaConnector
                 guestcard.cardtype = 4; // 4 - Staff Card
             }
 
-            // Provisional data for testing            
+            // Provisional data for testing
+            /*            
             csdateEnd.year_Renamed = csdateNow.year_Renamed;
             csdateEnd.month_Renamed = csdateNow.month_Renamed;
-            csdateEnd.day_Renamed = 25;
-            /*DateTime endDate = Helpers.epoch2string(int.Parse(kmessage.payload.checkoutHours));
-            csdateEnd.year_Renamed = Convert.ToByte(sbyte.Parse(endDate.Year.ToString()));
+            csdateEnd.day_Renamed = 30;
+            */
+            DateTime endDate = Helpers.epoch2date(double.Parse(kmessage.payload.checkoutHours));
+            int endDateYear = Helpers.YearPC2Cisa(endDate.Year);
+            csdateEnd.year_Renamed = Convert.ToByte(sbyte.Parse(endDateYear.ToString().Substring(endDateYear.ToString().Length - 2)));
             csdateEnd.month_Renamed = Convert.ToByte(sbyte.Parse(endDate.Month.ToString()));
-            csdateEnd.day_Renamed = Convert.ToByte(sbyte.Parse(endDate.Day.ToString()));*/
+            csdateEnd.day_Renamed = Convert.ToByte(sbyte.Parse(endDate.Day.ToString()));
 
 
             guestcard.accessid = kmessage.payload.accessId; // Guest/Employee name
             guestcard.accesstime_Renamed.dateStart = csdateNow; // Checkin date
             guestcard.accesstime_Renamed.dateEnd = csdateEnd; // Checkout date
             guestcard.accesstime_Renamed.timeStart = cstimeNow; // checkin time
-            guestcard.accesstime_Renamed.timeEnd.hours = 23; // checkout hour
-            guestcard.accesstime_Renamed.timeEnd.minutes = 59; // checkout minutes
+            guestcard.accesstime_Renamed.timeEnd.hours = Convert.ToByte(sbyte.Parse(endDate.Hour.ToString())); // checkout hour
+            guestcard.accesstime_Renamed.timeEnd.minutes = Convert.ToByte(sbyte.Parse(endDate.Minute.ToString())); ; // checkout minutes
             guestcard.credits = 0; // credits
 
             guestcard.cardinfo_Renamed.icopy = 1;
@@ -563,6 +590,7 @@ namespace CISAKafkaConnector
         {
             /* CISA DLL Testing  */
             CardData cardData = new CardData();
+            string hotelFile, keyplanFile;
             
             short rc = 0;
             string serialnumberC2B = string.Format("{0,7}", ""); // 8 Chars fixed length string
@@ -579,37 +607,73 @@ namespace CISAKafkaConnector
             string warning = "";
             Csemks32.card guestcard = new Csemks32.card();
 
-            cardData.result.rc = Csemks32.CSE_SUCCESS; // Forcing Reading Result Successful
-            cardData.message.payload.accessId = "Guest name";
-            cardData.message.payload.room = "101";
-
-            /*
-            rc = CSEWaveModeDecode(bufCardWavemode, serialnumberC2B, bufCard); // How can get bufCardWamode with valid information? Read it using DLL function or directly via NFC???
-
-            if (rc == Csemks32.CSE_SUCCESS)
+            if (NFCDevice.connectCard())// establish connection to the card
             {
-                rc = CSEBuffer2Card(bufCard, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcard, warning);
+                Console.WriteLine("Reading from Card ...");
+                hotelFile = NFCDevice.readHotelFile(); // Read Hotel File - 36 bytes
+                keyplanFile = NFCDevice.readKeyplanFile(); // Read Keyplan File - 192 bytes
+                NFCDevice.Close();
+                // Console.WriteLine("* HOTEL FILE: " + vbHelper.Ascii2Hex(Encoding.ASCII.GetBytes(hotelFile)));
+                // Console.WriteLine("* KEYPLAN FILE: " + vbHelper.Ascii2Hex(Encoding.ASCII.GetBytes(keyplanFile)));
+                Console.WriteLine("* HOTEL FILE: " + hotelFile);
+                Console.WriteLine("* KEYPLAN FILE: " + keyplanFile);
+
+                string bufCardWavemodeStr = hotelFile + keyplanFile;
+
+                bufCardWavemode = (byte[])Helpers.Hex2Byte(bufCardWavemodeStr);
+
+                rc = CSEWaveModeDecode(bufCardWavemode, serialnumberC2B, bufCard); // We are getting bufCardWavemode value reading the card via NFC
+
                 if (rc == Csemks32.CSE_SUCCESS)
                 {
-                    Console.WriteLine("Card readed correctly");
+                    rc = CSEBuffer2Card(bufCard, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcard, warning);
+                    if (rc == Csemks32.CSE_SUCCESS)
+                    {
+                        Console.WriteLine("Card readed correctly");
+                        cardData.result.rc = 0; // Reading Result Successful = Csemks32.CSE_SUCCESS
+                        cardData.message.payload.accessId = "Guest name";  // TODO: get param from guestcard variable
+                        cardData.message.payload.checkoutHours = null;  // TODO: get param from guestcard.accesstime_Renamed variable
+                        cardData.message.payload.room = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\"";
+                        cardData.message.payload.extraSpaces = new List<string>(new string[] { "espace1", "espace2" }); // TODO: get param from guestcard variable
+                        cardData.message.payload.groups = new List<string>(new string[] { "group1", "group2" }); // TODO: get param from guestcard variable
+                        cardData.message.payload.zone = null; // TODO: get param from guestcard variable
+                    }
+                    else
+                    {
+                        cardData.result.rc = CSELoadErrNo();
+                        cardData.result.errordesc = "\"CSEBuffer2Card - ErrNo " + cardData.result.rc + "\"";
+                        Console.WriteLine("CSEBuffer2Card Failed");
+                        Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+                    }
                 }
                 else
                 {
                     cardData.result.rc = CSELoadErrNo();
-                    cardData.result.errordesc = "\"CSEBuffer2Card - ErrNo " + cardData.result.rc + "\"";
-                    Console.WriteLine("CSEBuffer2Card Failed");
+                    cardData.result.errordesc = "\"CSEWaveModeDecode Failed - ErrNo " + cardData.result.rc + "\"";
+                    Console.WriteLine("CSEWaveModeDecode Failed");
                     Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
-                }
+                }               
             }
             else
             {
-                cardData.result.rc = CSELoadErrNo();
-                cardData.result.errordesc = "\"CSEWaveModeDecode Failed - ErrNo " + cardData.result.rc + "\"";
-                Console.WriteLine("CSEWaveModeDecode Failed");
-                Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+                Console.WriteLine("Card not availale.");
+                cardData.result.rc = -1;
+                cardData.result.errordesc = "\"Reading card failed - Card not availale.\"";
             }
-            */
+
+            
+
+
+
             return cardData;
+        }
+
+        public byte[] addByteToArray(byte[] bArray, byte newByte)
+        {
+            byte[] newArray = new byte[bArray.Length + 1];
+            bArray.CopyTo(newArray, 1);
+            newArray[0] = newByte;
+            return newArray;
         }
     }
 }

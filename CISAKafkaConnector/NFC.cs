@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CisaNet.Entity;
 
 namespace CISAKafkaConnector
 {
@@ -20,6 +21,7 @@ namespace CISAKafkaConnector
         public int SendLen, RecvLen, nBytesRet, reqType, Aprotocol, dwProtocol, cbPciLength;
         public Card.SCARD_READERSTATE RdrState;
         public Card.SCARD_IO_REQUEST pioSendRequest;
+        public static VBHelpers vbHelper = new VBHelpers();
 
         public void SelectDevice()
         {
@@ -154,6 +156,25 @@ namespace CISAKafkaConnector
             submitHex(block6data.Hex2Byte(), "6"); // data block 6
         }
 
+        // Read Hotel File
+        public string readHotelFile() // Hotel file is 36*2 chars long
+        {
+            string file; // wavemodebufCard for Mifare 
+
+            // The Hotel file must be written in the first dedicated Mifare Classic sector (sector 1 by default)
+            // the 36 bytes obtained from the function must be transformed into a 48 bytes buffer (corresponding to 3 Mifare blocks, 16 bytes each) as described below:
+            
+            /*byte[] bloque4 = Encoding.ASCII.GetBytes(verifyCard("4"));
+            byte[] bloque5 = Encoding.ASCII.GetBytes(verifyCard("5"));
+            byte[] bloque6 = Encoding.ASCII.GetBytes(verifyCard("6"));
+            */
+            file = verifyCard("4").Substring(0, 32); // file.Substring(0, 32); // Get first 16 bytes (32 chars)
+            file = file + verifyCard("5").Substring(0,24); // file.Substring(32, 24) + "00000000"; // Get following 12 bytes (24 chars) padded to 16 bytes with zeroes (4 x 0x00)
+            file = file + verifyCard("6").Substring(0,16); // file.Substring(56) + "0000000000000000"; // Get resting 8 bytes (16 chars) padded to 16 bytes with zeroes (8 x 0x00)
+
+            return file;
+        }
+
         // Write Keyplan File
         public void writeKeyplanFile(string file) // Keyplan file is 192*2 chars long
         {
@@ -173,6 +194,45 @@ namespace CISAKafkaConnector
             submitHex(file.Substring(320, 32).Hex2Byte(), "21"); // data block 21
             submitHex(file.Substring(352, 32).Hex2Byte(), "22"); // data block 22
             //submitHex(test, "22"); // data block 22
+        }
+
+        // Read Keyplan File
+        public string readKeyplanFile() // Hotel file is 36*2 chars long
+        {
+            string file;
+
+            // Keyplan file must be written from the following dedicated Mifare Classic sector(sector 2 by default), without any padding.
+            //byte[] test = new byte[] { 0x22, 0x00, 0x25, 0x00, 0x9E, 0x04, 0x7C, 0x45, 0x0C, 0x69, 0x00, 0x20, 0x00, 0xFF, 0x89, 0x017 };
+
+            /*
+            byte[] bloque8 = Encoding.ASCII.GetBytes(verifyCard("8"));
+            byte[] bloque9 = Encoding.ASCII.GetBytes(verifyCard("9"));
+            byte[] bloque10 = Encoding.ASCII.GetBytes(verifyCard("10"));
+            byte[] bloque12 = Encoding.ASCII.GetBytes(verifyCard("12"));
+            byte[] bloque13= Encoding.ASCII.GetBytes(verifyCard("13"));
+            byte[] bloque14 = Encoding.ASCII.GetBytes(verifyCard("14"));
+            byte[] bloque16 = Encoding.ASCII.GetBytes(verifyCard("16"));
+            byte[] bloque17 = Encoding.ASCII.GetBytes(verifyCard("17"));
+            byte[] bloque18 = Encoding.ASCII.GetBytes(verifyCard("18"));
+            byte[] bloque20 = Encoding.ASCII.GetBytes(verifyCard("20"));
+            byte[] bloque21 = Encoding.ASCII.GetBytes(verifyCard("21"));
+            byte[] bloque22 = Encoding.ASCII.GetBytes(verifyCard("22"));
+            */
+
+            file = verifyCard("8").Substring(0, 32); // Sector 2 - data block 8 is the data block we start writing Keyplan File data on the card
+            file = file + verifyCard("9").Substring(0, 32); // data block 9
+            file = file + verifyCard("10").Substring(0, 32); // data block 10
+            file = file + verifyCard("12").Substring(0, 32); // Sector 3 - data block 12
+            file = file + verifyCard("13").Substring(0, 32); // data block 13
+            file = file + verifyCard("14").Substring(0, 32); // data block 14            
+            file = file + verifyCard("16").Substring(0, 32); // Sector 4 - data block 16
+            file = file + verifyCard("17").Substring(0, 32); // data block 17
+            file = file + verifyCard("18").Substring(0, 32); // data block 18
+            file = file + verifyCard("20").Substring(0, 32); // Sector 5 - data block 20
+            file = file + verifyCard("21").Substring(0, 32); // data block 21
+            file = file + verifyCard("22").Substring(0, 32); // data block 22
+
+            return file;
         }
 
         // Write card - Submit Text method
@@ -399,7 +459,10 @@ namespace CISAKafkaConnector
                 value = readBlock(Block);
             }
 
-            value = value.Split(new char[] { '\0' }, 2, StringSplitOptions.None)[0].ToString();
+            // value = value.Split(new char[] { '\0' }, 2, StringSplitOptions.None)[0].ToString(); // not valid for CISA encoder
+            // Remove 0x90 0x00 (SendAPDUandDisplay command) - remove last 4 chars from the string
+            value = value.Substring(0, value.Length - 4);
+
             return value;
         }
 
@@ -437,10 +500,15 @@ namespace CISAKafkaConnector
                     return "FailRead";
                 }
 
-                // Display data in text format
+                /* Display data in text format
                 for (indx = 0; indx <= RecvLen - 1; indx++)
                 {
                     tmpStr = tmpStr + Convert.ToChar(RecvBuff[indx]);
+                }*/
+
+                for (indx = 0; indx <= RecvLen - 1; indx++)
+                {
+                    tmpStr = tmpStr + string.Format("{0:X2}", RecvBuff[indx]);
                 }
 
                 return (tmpStr);
