@@ -631,8 +631,18 @@ namespace CISAKafkaConnector
                     {
                         Console.WriteLine("Card readed correctly");
                         cardData.result.rc = 0; // Reading Result Successful = Csemks32.CSE_SUCCESS
-                        cardData.message.payload.accessId = "Guest name";  // TODO: get param from guestcard variable
-                        cardData.message.payload.checkoutHours = null;  // TODO: get param from guestcard.accesstime_Renamed variable
+                        cardData.message.payload.accessId = "Guest name";  // The Guest name is not physically written on the card, so it cannot be returned.
+
+                        // checkoutHours: get param from guestcard.accesstime_Renamed variable                        
+                        string codateYear = DateTime.Now.Year.ToString().Substring(0, 2) + Helpers.YearCisa(guestcard.accesstime_Renamed.dateEnd.year_Renamed); // Checkout date (year)
+                        int codateMonth = (int)guestcard.accesstime_Renamed.dateEnd.month_Renamed; // Checkout date (month)
+                        int codateDay = (int)guestcard.accesstime_Renamed.dateEnd.day_Renamed; // Checkout date (day)
+                        int codateHour = (int)guestcard.accesstime_Renamed.timeEnd.hours; // Checkout date (hour)
+                        int codateMinutes = (int)guestcard.accesstime_Renamed.timeEnd.minutes; // Checkout date (minutes)
+                        DateTime checkoutDate = DateTime.ParseExact(codateYear+"-"+codateMonth.ToString("00") + "-"+codateDay.ToString("00") + " "+codateHour.ToString("00") + ":"+codateMinutes.ToString("00") + ":00", "yyyy-MM-dd HH:mm:ss",
+                                       System.Globalization.CultureInfo.InvariantCulture);
+                        cardData.message.payload.checkoutHours = Helpers.date2epoch(checkoutDate);
+
                         cardData.message.payload.room = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\"";
                         cardData.message.payload.extraSpaces = new List<string>(new string[] { "espace1", "espace2" }); // TODO: get param from guestcard variable
                         cardData.message.payload.groups = new List<string>(new string[] { "group1", "group2" }); // TODO: get param from guestcard variable
