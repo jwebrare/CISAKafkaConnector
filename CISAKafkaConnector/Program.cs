@@ -435,7 +435,13 @@ namespace CISAKafkaConnector
 
             guestcard.cardinfo_Renamed.icopy = 1;
             guestcard.cardinfo_Renamed.ncopy = 1;
-            guestcard.fOvrPrivacy = 1;
+            if (guestcard.cardtype == 4) // Staff
+            {
+                guestcard.fOvrPrivacy = 0;
+            } else // Guest
+            {
+                guestcard.fOvrPrivacy = 1;
+            }
             guestcard.fOffice = 0;
             guestcard.fCardHistory = 0;
             guestcard.nhoursvalid = 0;
@@ -444,7 +450,6 @@ namespace CISAKafkaConnector
 
             if (guestcard.cardtype == 4)
             { // Staff's Card
-
                 /*
                 guestcard.accesstime_Renamed.Initialize();
                 
@@ -644,13 +649,16 @@ namespace CISAKafkaConnector
 
 
                         // Read room/zone
-                        if (guestcard.cardtype == 4) // Staff
+                        if (guestcard.cardtype > 0) // Staff
                         {
-                            cardData.message.payload.zone = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read zone
+                            //cardData.message.payload.zone = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read zone
+                            cardData.message.payload.zone = guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()); // Read zone
+                            cardData.message.payload.room = null;
                             cardData.message.payload.accessId = "Staff name";  // The Staff name is not physically written on the card, so it cannot be returned.
                         } else // Guest
                         {
                             cardData.message.payload.room = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read room
+                            cardData.message.payload.zone = null;
                             cardData.message.payload.accessId = "Guest name";  // The Guest name is not physically written on the card, so it cannot be returned.
                         }
                             
@@ -684,7 +692,6 @@ namespace CISAKafkaConnector
                         }
 
                         cardData.message.payload.groups = groups; // new List<string>(new string[] { "group1", "group2" });
-                        cardData.message.payload.zone = null; // TODO: get param from guestcard variable
                     }
                     else
                     {
