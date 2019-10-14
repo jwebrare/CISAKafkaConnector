@@ -630,8 +630,7 @@ namespace CISAKafkaConnector
                     if (rc == Csemks32.CSE_SUCCESS)
                     {
                         Console.WriteLine("Card readed correctly");
-                        cardData.result.rc = 0; // Reading Result Successful = Csemks32.CSE_SUCCESS
-                        cardData.message.payload.accessId = "Guest name";  // The Guest name is not physically written on the card, so it cannot be returned.
+                        cardData.result.rc = 0; // Reading Result Successful = Csemks32.CSE_SUCCESS                        
 
                         // checkoutHours: get param from guestcard.accesstime_Renamed variable                        
                         string codateYear = DateTime.Now.Year.ToString().Substring(0, 2) + Helpers.YearCisa(guestcard.accesstime_Renamed.dateEnd.year_Renamed); // Checkout date (year)
@@ -643,9 +642,48 @@ namespace CISAKafkaConnector
                                        System.Globalization.CultureInfo.InvariantCulture);
                         cardData.message.payload.checkoutHours = Helpers.date2epoch(checkoutDate);
 
-                        cardData.message.payload.room = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\"";
-                        cardData.message.payload.extraSpaces = new List<string>(new string[] { "espace1", "espace2" }); // TODO: get param from guestcard variable
-                        cardData.message.payload.groups = new List<string>(new string[] { "group1", "group2" }); // TODO: get param from guestcard variable
+
+                        // Read room/zone
+                        if (guestcard.cardtype == 4) // Staff
+                        {
+                            cardData.message.payload.zone = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read zone
+                            cardData.message.payload.accessId = "Staff name";  // The Staff name is not physically written on the card, so it cannot be returned.
+                        } else // Guest
+                        {
+                            cardData.message.payload.room = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read room
+                            cardData.message.payload.accessId = "Guest name";  // The Guest name is not physically written on the card, so it cannot be returned.
+                        }
+                            
+
+                        // Read extra spaces
+                        string space1 = guestcard.accesstarget2.bed.ToString().Insert(1, guestcard.accesstarget2.id.ToString());
+                        string space2 = guestcard.accesstarget3.bed.ToString().Insert(1, guestcard.accesstarget3.id.ToString());
+                        string space3 = guestcard.accesstarget4.bed.ToString().Insert(1, guestcard.accesstarget4.id.ToString());
+
+                        List<string> extraSpaces = new List<string>();
+                        if (space1 != "00")
+                        {
+                            extraSpaces.Add(space1);
+                        }
+                        if (space2 != "00")
+                        {
+                            extraSpaces.Add(space2);
+                        }
+                        if (space3 != "00")
+                        {
+                            extraSpaces.Add(space3);
+                        }
+                        cardData.message.payload.extraSpaces = extraSpaces; // new List<string>(new string[] { "espace1", "espace2" });
+
+                        // Read groups
+                        string group1 = guestcard.accesstarget5.bed.ToString().Insert(1, guestcard.accesstarget5.id.ToString());
+                        List<string> groups = new List<string>();
+                        if (group1 != "00")
+                        {
+                            groups.Add(group1);
+                        }
+
+                        cardData.message.payload.groups = groups; // new List<string>(new string[] { "group1", "group2" });
                         cardData.message.payload.zone = null; // TODO: get param from guestcard variable
                     }
                     else
