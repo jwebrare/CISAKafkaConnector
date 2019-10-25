@@ -632,6 +632,7 @@ namespace CISAKafkaConnector
                 if (rc == Csemks32.CSE_SUCCESS)
                 {
                     rc = CSEBuffer2Card(bufCard, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcard, warning);
+                    
                     if (rc == Csemks32.CSE_SUCCESS)
                     {
                         Console.WriteLine("Card readed correctly");
@@ -661,7 +662,38 @@ namespace CISAKafkaConnector
                             cardData.message.payload.zone = null;
                             cardData.message.payload.accessId = "Guest name";  // The Guest name is not physically written on the card, so it cannot be returned.
                         }
-                            
+
+                        // Try to Get "Guest/Staff member" name
+                        // nCard parameter -> guestcard.cardinfo_Renamed.ncard;
+                        // Function to call -> rc = CSESearchCard(ref guestcardOp, ref guestcardRead, ref cardSearch);
+                        Csemks32.card guestcardRead = new Csemks32.card();
+                        Csemks32.card guestcardOp = new Csemks32.card();
+                        Csemks32.cardsearch cardSearch = new Csemks32.cardsearch();
+
+                        cardSearch.ncard = guestcard.cardinfo_Renamed.ncard;
+
+                        //byte[] bufCardop = new byte[600];  // 221
+                        //byte[] bufCard = new byte[600];  // 221
+
+
+                        rc = CSESearchCard(ref guestcardOp, ref guestcardRead, ref cardSearch);
+                        if (rc == Csemks32.CSE_SUCCESS)
+                        {
+                            string name = guestcardRead.accessid;
+                            cardData.message.payload.accessId = name; // Set "guest/staff member" name
+                            // DateTime dtStart = Helpers.csdt2Dt(guestcardRead.accesstime_Renamed.dateStart, guestcardRead.accesstime_Renamed.timeStart);
+                            // DateTime dtEnd = Helpers.csdt2Dt(guestcardRead.accesstime_Renamed.dateEnd, guestcardRead.accesstime_Renamed.timeEnd);
+                            //Console.WriteLine("Card info: " + string.Format("ncard:{0} name:{1}  start:{2}  End:{3}\n", guestcardRead.cardinfo_Renamed.ncard, name, dtStart, dtEnd));
+                        }
+                        else
+                        {
+                            cardData.result.rc = CSELoadErrNo();
+                            cardData.result.errordesc = "\"CSESearchCard - ErrNo " + cardData.result.rc + "\"";
+                            Console.WriteLine("CSESearchCard Failed");
+                            Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
+                        }
+                        // End Get "Guest/Staff member" name
+
 
                         // Read extra spaces
                         string space1 = guestcard.accesstarget2.bed.ToString().Insert(1, guestcard.accesstarget2.id.ToString());

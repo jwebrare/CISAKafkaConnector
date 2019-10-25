@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using CisaNet.Entity;
 
 namespace CISAKafkaConnector
 {
@@ -163,6 +164,12 @@ namespace CISAKafkaConnector
             DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             TimeSpan diff = date.ToUniversalTime() - origin;
             return Math.Floor(diff.TotalSeconds).ToString();
+        }
+
+        public static DateTime csdt2Dt(Csemks32.csdate cdate, Csemks32.cstime ctime)
+        {
+            DateTime DT = new DateTime(cdate.year_Renamed, cdate.month_Renamed, cdate.day_Renamed, ctime.hours, ctime.minutes, 0);
+            return DT;
         }
 
     }
