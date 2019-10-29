@@ -304,7 +304,7 @@ namespace CISAKafkaConnector
                                                 }
                                             }
                                         }
-                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"accessId\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces + "]" : "null") + ",\"groups\":" + ((groups) != null ? "[" + groups + "]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + cardData.message.payload.room + ",\"zone\":" + (cardData.message.payload.zone != null ? "\"" + cardData.message.payload.zone + "\"" : "null") + "}}";
+                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"accessId\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces + "]" : "null") + ",\"groups\":" + ((groups) != null ? "[" + groups + "]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + (!String.IsNullOrEmpty(cardData.message.payload.room) ? "\"" + cardData.message.payload.room + "\"" : "null") + ",\"zone\":" + (cardData.message.payload.zone != null ? "\"" + cardData.message.payload.zone + "\"" : "null") + "}}";
                                     }
                                     else
                                     {
@@ -515,57 +515,6 @@ namespace CISAKafkaConnector
                 Console.WriteLine("* KEYPLAN FILE: " + vbHelper.MidVB(vbHelper.Ascii2Hex(bufCardWavemode), 32 * 2 + 1, 188 * 2));
                 Console.WriteLine("* KEYPLAN FILE: " + Helpers.Mid(bufCardWavemode.Ascii2Hex(), 32 * 2 + 1, 188 * 2));
 
-                /* READ TEST
-                
-                CardData cardData = new CardData();
-                byte[] bufCardRead = new byte[400];
-                string accesstname1Read = string.Format("{0,6}", ""); // room/zone - first access target name
-                string accesstname2Read = string.Format("{0,6}", ""); // extraSpaces - second access target name
-                string accesstname3Read = string.Format("{0,6}", ""); // extraSpaces - third access target name
-                string accesstname4Read = string.Format("{0,6}", ""); // extraSpaces - fourth access target name
-                string accesstname5Read = string.Format("{0,6}", ""); // groups - category name
-                string warning = "";
-                Csemks32.card guestcardRead = new Csemks32.card();
-                Csemks32.card guestcardOp = new Csemks32.card();
-                Csemks32.cardsearch cardSearch = new Csemks32.cardsearch();
-                
-                string serialnumberB2C = string.Format("{0,7}", ""); // 8 Chars fixed length string
-                serialnumberB2C = vbHelper.Hex2Bin(CardUID + "C15A13FF");                 
-
-                rc = CSEWaveModeDecode(bufCardWavemode, serialnumberB2C, bufCardRead); // How can get bufCardWamode with valid information? Read it using DLL function or directly via NFC???
-
-                if (rc == Csemks32.CSE_SUCCESS)
-                {
-                    rc = CSEBuffer2Card(bufCardRead, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcardRead, warning);
-                    if (rc == Csemks32.CSE_SUCCESS)
-                    {
-                        // cardSearch.accessid = guestcardRead.accessid;
-                        cardSearch.accesstarget_Renamed.bed = 0;
-                        cardSearch.accesstarget_Renamed.id = 22;
-                        // cardSearch.accessid = serialnumberB2C;
-
-                        rc = CSESearchCard(ref guestcardOp, ref guestcardRead, ref cardSearch);
-                        if (rc == Csemks32.CSE_SUCCESS)
-                        {
-                            Console.WriteLine("Card readed correctly");
-                        } else {
-                            cardData.result.rc = CSELoadErrNo();
-                            cardData.result.errordesc = "\"CSESearchCard - ErrNo " + cardData.result.rc + "\"";
-                            Console.WriteLine("CSESearchCard Failed");
-                            Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
-                        }
-                    }
-                    else
-                    {
-                        cardData.result.rc = CSELoadErrNo();
-                        cardData.result.errordesc = "\"CSEBuffer2Card - ErrNo " + cardData.result.rc + "\"";
-                        Console.WriteLine("CSEBuffer2Card Failed");
-                        Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
-                    }
-                }
-                /* END READ TEST */
-
-
                 if (NFCDevice.connectCard())// establish connection to the card: you've declared this from previous post
                 {
                     Console.WriteLine("Writing to Card ...");
@@ -658,36 +607,12 @@ namespace CISAKafkaConnector
                         // Read room/zone
                         if (guestcard.cardtype > 0) // Staff
                         {
-                            Csemks32.accesstarget accesstarget = new Csemks32.accesstarget();
-
-                            accesstarget.bed = 0;
-                            //accesstarget.id = Csemks32.AT_FIRSTZONE;
-                            //accesstarget.id = Csemks32.AT_FIRSTZONE+1;
-                            short zoneid = guestcard.accesstarget1.bed;
-                            zoneid -= 1;
-                            accesstarget.id = (short)(Csemks32.AT_FIRSTZONE + zoneid);
-
-                            string accesstname1 = string.Format("{0,6}", "");
-                            Csemks32.ZONEPARAMS zp = new Csemks32.ZONEPARAMS();
-                            char[] charBuff = new char[8];
-
-
-                            rc = CSEReadAccessTarget(ref accesstarget, 0, charBuff, ref zp);
-
-                            if (rc == Csemks32.CSE_SUCCESS)
-                            {
-                                cardData.message.payload.zone = Helpers.char2String(charBuff);
-                            } else
-                            {
-                                cardData.message.payload.zone = guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()); // Read zone
-                            }
-
-                            //cardData.message.payload.zone = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read zone
+                            cardData.message.payload.zone = CISAReadAccessTargetZone(guestcard.accesstarget1); // Read zone
                             cardData.message.payload.room = null;
                             cardData.message.payload.accessId = "Staff name";  // The Staff name is not physically written on the card, so it cannot be returned.
                         } else // Guest
                         {
-                            cardData.message.payload.room = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read room
+                            cardData.message.payload.room = CISAReadAccessTargetLock(guestcard.accesstarget1); // Read room
                             cardData.message.payload.zone = null;
                             cardData.message.payload.accessId = "Guest name";  // The Guest name is not physically written on the card, so it cannot be returned.
                         }
@@ -725,30 +650,29 @@ namespace CISAKafkaConnector
 
 
                         // Read extra spaces
-                        string space1 = guestcard.accesstarget2.bed.ToString().Insert(1, guestcard.accesstarget2.id.ToString());
-                        string space2 = guestcard.accesstarget3.bed.ToString().Insert(1, guestcard.accesstarget3.id.ToString());
-                        string space3 = guestcard.accesstarget4.bed.ToString().Insert(1, guestcard.accesstarget4.id.ToString());
-
                         List<string> extraSpaces = new List<string>();
-                        if (space1 != "00")
+                        if (guestcard.accesstarget2.bed != 0) // Check if extraSpace is not empty (bed = 0)
                         {
+                            string space1 = CISAReadAccessTargetLock(guestcard.accesstarget2);
                             extraSpaces.Add(space1);
                         }
-                        if (space2 != "00")
+                        if (guestcard.accesstarget3.bed != 0) // Check if extraSpace is not empty (bed = 0)
                         {
+                            string space2 = CISAReadAccessTargetLock(guestcard.accesstarget3);
                             extraSpaces.Add(space2);
                         }
-                        if (space3 != "00")
+                        if (guestcard.accesstarget4.bed != 0) // Check if extraSpace is not empty (bed = 0)
                         {
+                            string space3 = CISAReadAccessTargetLock(guestcard.accesstarget4);
                             extraSpaces.Add(space3);
                         }
                         cardData.message.payload.extraSpaces = extraSpaces; // new List<string>(new string[] { "espace1", "espace2" });
 
                         // Read groups
-                        string group1 = guestcard.accesstarget5.bed.ToString().Insert(1, guestcard.accesstarget5.id.ToString());
                         List<string> groups = new List<string>();
-                        if (group1 != "00")
+                        if (guestcard.accesstarget5.bed != 0) // Check if group is not empty (bed = 0)
                         {
+                            string group1 = CISAReadAccessTargetLock(guestcard.accesstarget5);
                             groups.Add(group1);
                         }
 
@@ -782,6 +706,81 @@ namespace CISAKafkaConnector
 
 
             return cardData;
+        }
+
+        // Read "zone" name value from "Zones" CISA database table
+        public static string CISAReadAccessTargetZone(Csemks32.accesstarget target)
+        {
+            short rc = 0;
+            string name = "";
+
+            Csemks32.accesstarget accesstarget = new Csemks32.accesstarget();
+
+            accesstarget.bed = 0;
+            //accesstarget.id = Csemks32.AT_FIRSTZONE;
+            short zoneid = target.bed;
+            zoneid -= 1;
+            accesstarget.id = (short)(Csemks32.AT_FIRSTZONE + zoneid);
+
+            string accesstname1 = string.Format("{0,6}", "");
+            Csemks32.ZONEPARAMS zp = new Csemks32.ZONEPARAMS();
+            char[] charBuff = new char[8];
+
+
+            rc = CSEReadAccessTarget(ref accesstarget, 0, charBuff, ref zp);
+
+            if (rc == Csemks32.CSE_SUCCESS)
+            {
+                name = Helpers.char2String(charBuff);
+                Console.WriteLine("CSEReadAccessTarget OK");
+                Console.WriteLine("ID:{0} idFirst:{1} idLast:{2} group:{3} cardtypmap:{4} hierlev:{5} hierprofiles:{6}  name:{7}", accesstarget.id, zp.idFirst, zp.idLast, zp.group, zp.cardtypemap, zp.hierlev, zp.hierprofiles, name);
+            }
+            else
+            {
+                name = target.bed.ToString().Insert(1, target.id.ToString()); // // Assign bed and id values forming a "room number" like 101
+                Console.WriteLine("CSEReadAccessTarget Failed");
+                Console.WriteLine("ErrNo: " + rc.ToString());
+            }
+
+            return name;
+        }
+
+        // Read "room/extraspaces" name value from "AllGuestRoomsUi" CISA database table
+        public static string CISAReadAccessTargetLock(Csemks32.accesstarget target)
+        {
+            short rc = 0;
+            string name = "";
+
+            Csemks32.accesstarget accesstarget = new Csemks32.accesstarget();
+
+            accesstarget.bed = 0;
+            //accesstarget.id = Csemks32.AT_FIRSTLOCK;
+            short lockid = target.bed;
+            lockid -= 1;
+            accesstarget.id = (short)(lockid);
+
+            string accesstname1 = string.Format("{0,6}", "");
+            Csemks32.LOCKPARAMS lp = new Csemks32.LOCKPARAMS();
+            lp.groupmap = string.Format("{0,8}", "");
+            char[] charBuff = new char[8];
+
+
+            rc = CSEReadAccessTarget(ref accesstarget, 1, charBuff, ref lp);
+
+            if (rc == Csemks32.CSE_SUCCESS)
+            {
+                name = Helpers.char2String(charBuff);
+                Console.WriteLine("CSEReadAccessTarget OK");
+                Console.WriteLine("ID:{0} Lev:{1} grp:{2} flags:{3} profile:{4}  name:{5}", accesstarget.id, lp.hierlev, lp.groupmap, lp.flags, lp.hierprofiles, name);                
+            }
+            else
+            {
+                name = target.bed.ToString().Insert(1, target.id.ToString()); // Assign bed and id values forming a "room number" like 101
+                Console.WriteLine("CSEReadAccessTarget Failed");
+                Console.WriteLine("ErrNo: " + rc.ToString());
+            }
+
+            return name;
         }
 
         public byte[] addByteToArray(byte[] bArray, byte newByte)
