@@ -71,8 +71,14 @@ namespace CISAKafkaConnector
         //Declare Function CSEErrNo Lib "csemks32" Alias "CSELoadErrNo" () As Short
 
         [DllImport("csemks32")]
-        public static extern short CSEReadAccessTarget(ref Csemks32.accesstarget accesstarget, short fNext, string accesstname, string bufParams);
+        // ZONES
+        public static extern short CSEReadAccessTarget(ref Csemks32.accesstarget accesstarget, short fNext, [Out] char[] accesstname, ref Csemks32.ZONEPARAMS bufCard1);
+        //public static extern short CSEReadAccessTarget(ref Csemks32.accesstarget accesstarget, short fNext, string accesstname, string bufParams);
         //Declare Function CSEReadAccessTarget Lib "csemks32" (ByRef accesstarget As accesstarget, ByVal fNext As Short, ByVal accesstname As String, ByVal bufParams As String) As Short
+
+        [DllImport("csemks32")]
+        // LOCKS
+        public static extern short CSEReadAccessTarget(ref Csemks32.accesstarget accesstarget, short fNext, [Out] char[] accesstname, ref Csemks32.LOCKPARAMS bufCard1);
 
         [DllImport("csemks32")]
         public static extern short CSEReadDateTime(ref Csemks32.csdate csdate, ref Csemks32.cstime cstime, out int seconds);
@@ -652,8 +658,31 @@ namespace CISAKafkaConnector
                         // Read room/zone
                         if (guestcard.cardtype > 0) // Staff
                         {
+                            Csemks32.accesstarget accesstarget = new Csemks32.accesstarget();
+
+                            accesstarget.bed = 0;
+                            //accesstarget.id = Csemks32.AT_FIRSTZONE;
+                            //accesstarget.id = Csemks32.AT_FIRSTZONE+1;
+                            short zoneid = guestcard.accesstarget1.bed;
+                            zoneid -= 1;
+                            accesstarget.id = (short)(Csemks32.AT_FIRSTZONE + zoneid);
+
+                            string accesstname1 = string.Format("{0,6}", "");
+                            Csemks32.ZONEPARAMS zp = new Csemks32.ZONEPARAMS();
+                            char[] charBuff = new char[8];
+
+
+                            rc = CSEReadAccessTarget(ref accesstarget, 0, charBuff, ref zp);
+
+                            if (rc == Csemks32.CSE_SUCCESS)
+                            {
+                                cardData.message.payload.zone = Helpers.char2String(charBuff);
+                            } else
+                            {
+                                cardData.message.payload.zone = guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()); // Read zone
+                            }
+
                             //cardData.message.payload.zone = "\"" + guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()) + "\""; // Read zone
-                            cardData.message.payload.zone = guestcard.accesstarget1.bed.ToString().Insert(1, guestcard.accesstarget1.id.ToString()); // Read zone
                             cardData.message.payload.room = null;
                             cardData.message.payload.accessId = "Staff name";  // The Staff name is not physically written on the card, so it cannot be returned.
                         } else // Guest

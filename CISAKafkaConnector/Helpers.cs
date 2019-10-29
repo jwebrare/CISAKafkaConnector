@@ -172,5 +172,27 @@ namespace CISAKafkaConnector
             return DT;
         }
 
+        // Convert char[]  to string
+        public static string char2String(char[] chr)
+        {
+            try
+            {
+                string ascii = string.Empty;
+
+                for (int i = 0; i < chr.Length; i++)
+                {
+                    char hs = chr[i];
+                    if (hs == 0) break;
+                    ascii += hs;
+
+                }
+
+                return ascii;
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+
+            return string.Empty;
+        }
+
     }
 }
