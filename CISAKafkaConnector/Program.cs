@@ -405,7 +405,8 @@ namespace CISAKafkaConnector
             string accesstname2 = string.Format("{0,6}", (kmessage.payload.extraSpaces != null && kmessage.payload.extraSpaces.Count > 0) ? kmessage.payload.extraSpaces[0] : ""); // extraSpaces - second access target name
             string accesstname3 = string.Format("{0,6}", (kmessage.payload.extraSpaces != null && kmessage.payload.extraSpaces.Count > 1) ? kmessage.payload.extraSpaces[1] : ""); // extraSpaces - third access target name
             string accesstname4 = string.Format("{0,6}", (kmessage.payload.extraSpaces != null && kmessage.payload.extraSpaces.Count > 2) ? kmessage.payload.extraSpaces[2] : ""); // extraSpaces - fourth access target name
-            string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? kmessage.payload.groups[0] : ""); // groups - category name
+            // string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? kmessage.payload.groups[0] : ""); // groups - category name
+            string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? "" : ""); // groups - category name // Pass "group" field value empty for testing purposes
 
             Csemks32.card guestcard = new Csemks32.card();
 
