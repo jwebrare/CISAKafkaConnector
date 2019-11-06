@@ -113,7 +113,7 @@ namespace CISAKafkaConnector
             public string accessId { get; set; }
             public string addressType { get; set; }
             public string checkoutHours { get; set; }
-            public List<string> extraSpaces { get; set; }
+            public List<string> spaces { get; set; }
             public List<string> groups { get; set; }
             public string hotelName { get; set; }
             public string id { get; set; }
@@ -247,20 +247,20 @@ namespace CISAKafkaConnector
                                 kmessage = JsonConvert.DeserializeObject<KafkaMessage>(cr.Value, jsonsettings);
                                 if (kmessage.payload.accessType == "CISA" && kmessage.payload.deviceId == encoderID)
                                 { // Only Kafka messages tagged with "CISA" accessType are processed
-                                    string extraSpaces = (kmessage.payload.extraSpaces != null ? string.Join(",", kmessage.payload.extraSpaces) : null);
+                                    string spaces = (kmessage.payload.spaces != null ? string.Join(",", kmessage.payload.spaces) : null);
                                     string groups = (kmessage.payload.groups != null ? string.Join(",", kmessage.payload.groups) : null);
 
-                                    Console.WriteLine($"Code: '{kmessage.code}' Guest/Staff: '{kmessage.payload.accessId}' Room: '{kmessage.payload.room}' Zone: '{kmessage.payload.zone}' ExtraSpaces: '{extraSpaces}' Groups: '{groups}' at: '{cr.TopicPartitionOffset}'.");
+                                    Console.WriteLine($"Code: '{kmessage.code}' Guest/Staff: '{kmessage.payload.accessId}' Room: '{kmessage.payload.room}' Zone: '{kmessage.payload.zone}' spaces: '{spaces}' Groups: '{groups}' at: '{cr.TopicPartitionOffset}'.");
                                     Helpers.WriteLog($"Consumed message '{cr.Value}' at: '{cr.TopicPartitionOffset}'.");
 
                                     CISAResult result = CISACheck(kmessage, NFCDevice);
                                     if (result.rc == Csemks32.CSE_SUCCESS)
                                     {
-                                        resultmessage = "{\"code\":\"write_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + "}}";
+                                        resultmessage = "{\"code\":\"write_result\",\"payload\":{\"id\":" + kmessage.payload.id + "}}";
                                     }
                                     else
                                     {
-                                        resultmessage = "{\"code\":\"write_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"error\":" + result.errordesc.ToString() + "}}";
+                                        resultmessage = "{\"code\":\"write_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"error\":" + result.errordesc.ToString() + "}}";
                                     }
 
                                     p.BeginProduce("write_result", new Message<Null, string> { Value = resultmessage }, handler);
@@ -280,17 +280,17 @@ namespace CISAKafkaConnector
                                     CardData cardData = CISAReadCard(NFCDevice);
                                     if (cardData.result.rc == Csemks32.CSE_SUCCESS)
                                     {
-                                        string extraSpaces = null;
+                                        string spaces = null;
                                         string groups = null;
-                                        if (cardData.message.payload.extraSpaces != null)
+                                        if (cardData.message.payload.spaces != null)
                                         {
-                                            for (var i = 0; i < cardData.message.payload.extraSpaces.Count; i++)
+                                            for (var i = 0; i < cardData.message.payload.spaces.Count; i++)
                                             {
-                                                extraSpaces = extraSpaces + "\"" + cardData.message.payload.extraSpaces[i] + "\"";
-                                                if (i != cardData.message.payload.extraSpaces.Count -1)
-                                                    {
-                                                        extraSpaces = extraSpaces + ","; // separator
-                                                    }
+                                                spaces = spaces + "\"" + cardData.message.payload.spaces[i] + "\"";
+                                                if (i != cardData.message.payload.spaces.Count - 1)
+                                                {
+                                                    spaces = spaces + ","; // separator
+                                                }
                                             }
                                         }
                                         if (cardData.message.payload.groups != null)
@@ -304,18 +304,18 @@ namespace CISAKafkaConnector
                                                 }
                                             }
                                         }
-                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"accessId\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"extraSpaces\":" + (extraSpaces != null ? "[" + extraSpaces + "]" : "null") + ",\"groups\":" + ((groups) != null ? "[" + groups + "]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + (!String.IsNullOrEmpty(cardData.message.payload.room) ? "\"" + cardData.message.payload.room + "\"" : "null") + ",\"zone\":" + (cardData.message.payload.zone != null ? "\"" + cardData.message.payload.zone + "\"" : "null") + "}}";
+                                        resultmessage = "{\"code\":\"read_card_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"accessType\":\"CISA\",\"deviceId\":\"" + kmessage.payload.deviceId + "\",\"guestName\":\"" + cardData.message.payload.accessId + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(cardData.message.payload.checkoutHours) ? "\"" + cardData.message.payload.checkoutHours + "\"" : "null") + ",\"spaces\":" + (spaces != null ? "[" + spaces + "]" : "null") + ",\"groups\":" + ((groups) != null ? "[" + groups + "]" : "null") + ",\"hotelName\":null,\"mac\":null,\"room\":" + (!String.IsNullOrEmpty(cardData.message.payload.room) ? "\"" + cardData.message.payload.room + "\"" : "null") + ",\"zone\":" + (cardData.message.payload.zone != null ? "\"" + cardData.message.payload.zone + "\"" : "null") + "}}";
                                     }
                                     else
                                     {
-                                        resultmessage = "{\"code\":\"read_result\",\"payload\":{\"requestId\":" + kmessage.payload.id + ",\"error\":" + cardData.result.errordesc.ToString() + "}}";
+                                        resultmessage = "{\"code\":\"read_card_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"error\":" + cardData.result.errordesc.ToString() + "}}";
                                     }
 
-                                    p.BeginProduce("read_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.BeginProduce("read_card_result", new Message<Null, string> { Value = resultmessage }, handler);
                                     p.Flush(TimeSpan.FromSeconds(1));
 
-                                    Helpers.WriteLog($"Response '{resultmessage}' sent to read_result topic.");
-                                    Console.WriteLine($"Response '{resultmessage}' sent to read_result topic.");
+                                    Helpers.WriteLog($"Response '{resultmessage}' sent to read_card_result topic.");
+                                    Console.WriteLine($"Response '{resultmessage}' sent to read_card_result topic.");
                                 }
                             }
 
@@ -402,11 +402,11 @@ namespace CISAKafkaConnector
             /* Calling CSECard2Buffer */
             // 6 Chars fixed length strings
             string accesstname1 = string.Format("{0,6}", (kmessage.payload.room != null) ? kmessage.payload.room : kmessage.payload.zone); // room/zone - first access target name
-            string accesstname2 = string.Format("{0,6}", (kmessage.payload.extraSpaces != null && kmessage.payload.extraSpaces.Count > 0) ? kmessage.payload.extraSpaces[0] : ""); // extraSpaces - second access target name
-            string accesstname3 = string.Format("{0,6}", (kmessage.payload.extraSpaces != null && kmessage.payload.extraSpaces.Count > 1) ? kmessage.payload.extraSpaces[1] : ""); // extraSpaces - third access target name
-            string accesstname4 = string.Format("{0,6}", (kmessage.payload.extraSpaces != null && kmessage.payload.extraSpaces.Count > 2) ? kmessage.payload.extraSpaces[2] : ""); // extraSpaces - fourth access target name
-            // string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? kmessage.payload.groups[0] : ""); // groups - category name
-            string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? "" : ""); // groups - category name // Pass "group" field value empty for testing purposes
+            string accesstname2 = string.Format("{0,6}", (kmessage.payload.spaces != null && kmessage.payload.spaces.Count > 0) ? kmessage.payload.spaces[0] : ""); // spaces - second access target name
+            string accesstname3 = string.Format("{0,6}", (kmessage.payload.spaces != null && kmessage.payload.spaces.Count > 1) ? kmessage.payload.spaces[1] : ""); // spaces - third access target name
+            string accesstname4 = string.Format("{0,6}", (kmessage.payload.spaces != null && kmessage.payload.spaces.Count > 2) ? kmessage.payload.spaces[2] : ""); // spaces - fourth access target name
+            string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? kmessage.payload.groups[0] : ""); // groups - category name
+            // string accesstname5 = string.Format("{0,6}", (kmessage.payload.groups != null && kmessage.payload.groups.Count > 0) ? "" : ""); // groups - category name // Pass "group" field value empty for testing purposes
 
             Csemks32.card guestcard = new Csemks32.card();
 
@@ -440,12 +440,17 @@ namespace CISAKafkaConnector
             guestcard.accesstime_Renamed.timeEnd.minutes = Convert.ToByte(sbyte.Parse(endDate.Minute.ToString())); ; // checkout minutes
             guestcard.credits = 0; // credits
 
+            // Force null group
+            guestcard.accesstarget5.bed = 0;
+            guestcard.accesstarget5.id = 0;
+
             guestcard.cardinfo_Renamed.icopy = 1;
             guestcard.cardinfo_Renamed.ncopy = 1;
             if (guestcard.cardtype == 4) // Staff
             {
                 guestcard.fOvrPrivacy = 0;
-            } else // Guest
+            }
+            else // Guest
             {
                 guestcard.fOvrPrivacy = 1;
             }
@@ -552,7 +557,7 @@ namespace CISAKafkaConnector
             /* CISA DLL Testing  */
             CardData cardData = new CardData();
             string hotelFile, keyplanFile;
-            
+
             short rc = 0;
             string serialnumberC2B = string.Format("{0,7}", ""); // 8 Chars fixed length string
             serialnumberC2B = vbHelper.Hex2Bin(CardUID + "C15A13FF");
@@ -561,9 +566,9 @@ namespace CISAKafkaConnector
             byte[] bufCardWavemode = new byte[400]; // 228
 
             string accesstname1Read = string.Format("{0,6}", ""); // room/zone - first access target name
-            string accesstname2Read = string.Format("{0,6}", ""); // extraSpaces - second access target name
-            string accesstname3Read = string.Format("{0,6}", ""); // extraSpaces - third access target name
-            string accesstname4Read = string.Format("{0,6}", ""); // extraSpaces - fourth access target name
+            string accesstname2Read = string.Format("{0,6}", ""); // spaces - second access target name
+            string accesstname3Read = string.Format("{0,6}", ""); // spaces - third access target name
+            string accesstname4Read = string.Format("{0,6}", ""); // spaces - fourth access target name
             string accesstname5Read = string.Format("{0,6}", ""); // groups - category name
             string warning = "";
             Csemks32.card guestcard = new Csemks32.card();
@@ -588,7 +593,7 @@ namespace CISAKafkaConnector
                 if (rc == Csemks32.CSE_SUCCESS)
                 {
                     rc = CSEBuffer2Card(bufCard, accesstname1Read, accesstname2Read, accesstname3Read, accesstname4Read, accesstname5Read, ref guestcard, warning);
-                    
+
                     if (rc == Csemks32.CSE_SUCCESS)
                     {
                         Console.WriteLine("Card readed correctly");
@@ -600,7 +605,7 @@ namespace CISAKafkaConnector
                         int codateDay = (int)guestcard.accesstime_Renamed.dateEnd.day_Renamed; // Checkout date (day)
                         int codateHour = (int)guestcard.accesstime_Renamed.timeEnd.hours; // Checkout date (hour)
                         int codateMinutes = (int)guestcard.accesstime_Renamed.timeEnd.minutes; // Checkout date (minutes)
-                        DateTime checkoutDate = DateTime.ParseExact(codateYear+"-"+codateMonth.ToString("00") + "-"+codateDay.ToString("00") + " "+codateHour.ToString("00") + ":"+codateMinutes.ToString("00") + ":00", "yyyy-MM-dd HH:mm:ss",
+                        DateTime checkoutDate = DateTime.ParseExact(codateYear + "-" + codateMonth.ToString("00") + "-" + codateDay.ToString("00") + " " + codateHour.ToString("00") + ":" + codateMinutes.ToString("00") + ":00", "yyyy-MM-dd HH:mm:ss",
                                        System.Globalization.CultureInfo.InvariantCulture);
                         cardData.message.payload.checkoutHours = Helpers.date2epoch(checkoutDate);
 
@@ -611,7 +616,8 @@ namespace CISAKafkaConnector
                             cardData.message.payload.zone = CISAReadAccessTargetZone(guestcard.accesstarget1); // Read zone
                             cardData.message.payload.room = null;
                             cardData.message.payload.accessId = "Staff name";  // The Staff name is not physically written on the card, so it cannot be returned.
-                        } else // Guest
+                        }
+                        else // Guest
                         {
                             cardData.message.payload.room = CISAReadAccessTargetLock(guestcard.accesstarget1); // Read room
                             cardData.message.payload.zone = null;
@@ -651,23 +657,23 @@ namespace CISAKafkaConnector
 
 
                         // Read extra spaces
-                        List<string> extraSpaces = new List<string>();
+                        List<string> spaces = new List<string>();
                         if (guestcard.accesstarget2.bed != 0) // Check if extraSpace is not empty (bed = 0)
                         {
                             string space1 = CISAReadAccessTargetLock(guestcard.accesstarget2);
-                            extraSpaces.Add(space1);
+                            spaces.Add(space1);
                         }
                         if (guestcard.accesstarget3.bed != 0) // Check if extraSpace is not empty (bed = 0)
                         {
                             string space2 = CISAReadAccessTargetLock(guestcard.accesstarget3);
-                            extraSpaces.Add(space2);
+                            spaces.Add(space2);
                         }
                         if (guestcard.accesstarget4.bed != 0) // Check if extraSpace is not empty (bed = 0)
                         {
                             string space3 = CISAReadAccessTargetLock(guestcard.accesstarget4);
-                            extraSpaces.Add(space3);
+                            spaces.Add(space3);
                         }
-                        cardData.message.payload.extraSpaces = extraSpaces; // new List<string>(new string[] { "espace1", "espace2" });
+                        cardData.message.payload.spaces = spaces; // new List<string>(new string[] { "espace1", "espace2" });
 
                         // Read groups
                         List<string> groups = new List<string>();
@@ -693,7 +699,7 @@ namespace CISAKafkaConnector
                     cardData.result.errordesc = "\"CSEWaveModeDecode Failed - ErrNo " + cardData.result.rc + "\"";
                     Console.WriteLine("CSEWaveModeDecode Failed");
                     Console.WriteLine("ErrNo: " + cardData.result.rc.ToString());
-                }               
+                }
             }
             else
             {
@@ -702,7 +708,7 @@ namespace CISAKafkaConnector
                 cardData.result.errordesc = "\"Reading card failed - Card not availale.\"";
             }
 
-            
+
 
 
 
@@ -746,7 +752,7 @@ namespace CISAKafkaConnector
             return name;
         }
 
-        // Read "room/extraspaces" name value from "AllGuestRoomsUi" CISA database table
+        // Read "room/spaces" name value from "AllGuestRoomsUi" CISA database table
         public static string CISAReadAccessTargetLock(Csemks32.accesstarget target)
         {
             short rc = 0;
@@ -772,7 +778,7 @@ namespace CISAKafkaConnector
             {
                 name = Helpers.char2String(charBuff);
                 Console.WriteLine("CSEReadAccessTarget OK");
-                Console.WriteLine("ID:{0} Lev:{1} grp:{2} flags:{3} profile:{4}  name:{5}", accesstarget.id, lp.hierlev, lp.groupmap, lp.flags, lp.hierprofiles, name);                
+                Console.WriteLine("ID:{0} Lev:{1} grp:{2} flags:{3} profile:{4}  name:{5}", accesstarget.id, lp.hierlev, lp.groupmap, lp.flags, lp.hierprofiles, name);
             }
             else
             {
