@@ -5,6 +5,7 @@ using Confluent.Kafka;
 using CisaNet.Entity;
 using Newtonsoft.Json;
 using System.Text;
+using System.Threading;
 
 namespace CISAKafkaConnector
 {
@@ -191,7 +192,7 @@ namespace CISAKafkaConnector
             kafkaTopics = new List<string>() { "write_request", "read_request", "card_readers_request" };
             KafkaMessage kmessage;
 
-            Action<DeliveryReportResult<Null, string>> handler = r =>
+            Action<DeliveryReport<Null, string>> handler = r =>
                 Console.WriteLine(!r.Error.IsError
                     ? $"Delivered message to {r.TopicPartitionOffset}"
                     : $"Delivery Error: {r.Error.Reason}");
@@ -200,20 +201,20 @@ namespace CISAKafkaConnector
             {
                 GroupId = "testingCISA" + rvalue.ToString("000"),
                 BootstrapServers = bootstrapServers,
-                AutoOffsetReset = (AutoOffsetResetType)autoOffsetReset // By default 1 == AutoOffsetResetType.Earliest
-                                                                       //SecurityProtocol = SecurityProtocolType.Sasl_Plaintext,
-                                                                       //SaslMechanism = SaslMechanismType.ScramSha256,
-                                                                       //SaslPassword = "90ZRaduaUyRfNbzIJnXVIRlmkbTgfFn8",
-                                                                       //SaslUsername = "y6bxsy8c",
-                                                                       //
-                                                                       // Note: The AutoOffsetReset property determines the start offset in the event
-                                                                       // there are not yet any committed offsets for the consumer group for the
-                                                                       // topic/partitions of interest. By default, offsets are committed
-                                                                       // automatically, so in this example, consumption will only start from the
-                                                                       // earliest message in the topic 'write_request' the first time you run the program.
+                AutoOffsetReset = AutoOffsetReset.Latest // By default 1 == AutoOffsetResetType.Earliest
+                                                          //SecurityProtocol = SecurityProtocolType.Sasl_Plaintext,
+                                                          //SaslMechanism = SaslMechanismType.ScramSha256,
+                                                          //SaslPassword = "90ZRaduaUyRfNbzIJnXVIRlmkbTgfFn8",
+                                                          //SaslUsername = "y6bxsy8c",
+                                                          //
+                                                          // Note: The AutoOffsetReset property determines the start offset in the event
+                                                          // there are not yet any committed offsets for the consumer group for the
+                                                          // topic/partitions of interest. By default, offsets are committed
+                                                          // automatically, so in this example, consumption will only start from the
+                                                          // earliest message in the topic 'write_request' the first time you run the program.
             };
 
-            using (var c = new Consumer<Ignore, string>(confC))
+            using (var c = new ConsumerBuilder<Ignore, string>(confC).Build())
             {
                 c.Subscribe(kafkaTopics);
 
@@ -223,20 +224,27 @@ namespace CISAKafkaConnector
                 //c.OnError += (_, e) => consuming = !e.IsFatal;
 
                 // Raised on critical errors, e.g. connection failures or all brokers down.
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Console.CancelKeyPress += (_, e) => {
+                    e.Cancel = true; // prevent the process from terminating.
+                    cts.Cancel();
+                };
+
+                /*
                 c.OnError += (_, error)
                 =>
                 {
                     Console.WriteLine($"Kafka error occured: {error.Reason}");
                     Helpers.WriteLog($"Kafka error occured: {error.Reason}");
                     consuming = !error.IsFatal;
-                };
+                };*/
 
                 while (consuming)
                 {
                     try
                     {
                         var cr = c.Consume();
-                        var p = new Producer<Null, string>(confC);
+                        var p = new ProducerBuilder<Null, string>(confC).Build();
                         string resultmessage = "";
                         var Topic = cr.Topic;
 
@@ -263,7 +271,7 @@ namespace CISAKafkaConnector
                                         resultmessage = "{\"code\":\"write_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"error\":" + result.errordesc.ToString() + "}}";
                                     }
 
-                                    p.BeginProduce("write_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.Produce("write_result", new Message<Null, string> { Value = resultmessage }, handler);
                                     p.Flush(TimeSpan.FromSeconds(1));
 
                                     Helpers.WriteLog($"Response '{resultmessage}' sent to write_result topic.");
@@ -311,7 +319,7 @@ namespace CISAKafkaConnector
                                         resultmessage = "{\"code\":\"read_card_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"error\":" + cardData.result.errordesc.ToString() + "}}";
                                     }
 
-                                    p.BeginProduce("read_card_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.Produce("read_card_result", new Message<Null, string> { Value = resultmessage }, handler);
                                     p.Flush(TimeSpan.FromSeconds(1));
 
                                     Helpers.WriteLog($"Response '{resultmessage}' sent to read_card_result topic.");
@@ -325,7 +333,7 @@ namespace CISAKafkaConnector
                                 if (kmessage.payload.id != null)
                                 {
                                     resultmessage = "{\"code\":\"card_readers_result\",\"payload\":{\"id\":" + kmessage.payload.id + ",\"deviceId\":\"" + encoderID + "\",\"type\":\"CISA\"}}";
-                                    p.BeginProduce("card_readers_result", new Message<Null, string> { Value = resultmessage }, handler);
+                                    p.Produce("card_readers_result", new Message<Null, string> { Value = resultmessage }, handler);
                                     p.Flush(TimeSpan.FromSeconds(1));
 
                                     Helpers.WriteLog($"Response '{resultmessage}' sent to card_readers_result topic.");

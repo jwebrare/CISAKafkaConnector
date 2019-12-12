@@ -41,12 +41,12 @@ namespace KafkaProducerTest
 
             };
 
-            Action<DeliveryReportResult<Null, string>> handler = r =>
+            Action<DeliveryReport<Null, string>> handler = r =>
             ShowJSONMessage(!r.Error.IsError
                 ? $"Delivered message {r.Message.Value} to {r.TopicPartitionOffset}"
                 : $"Delivery Error: {r.Error.Reason}");
             
-            var p = new Producer<Null, string>(conf);
+            var p = new ProducerBuilder<Null, string>(conf).Build();
             string jsonmessage = "";
             string extraSpaces = null;
             string operationType = "write_request"; // By default we will test a write_request
@@ -75,7 +75,7 @@ namespace KafkaProducerTest
                 operationType = "read_request";
                 jsonmessage = "{\"code\":\"read_request\",\"payload\":{\"accessType\":\"" + textBlock5.Text + "\",\"deviceId\":\"" + textBlock9.Text + "\",\"accessId\":\"" + textBlock1.Text + "\",\"addressType\":null,\"checkoutHours\":" + (!String.IsNullOrEmpty(textBlock8.Text) ? "\"" + textBlock8.Text + "\"" : "null") + ",\"spaces\":" + (extraSpaces != null ? "[" + extraSpaces.TrimEnd(',') + "]" : "null") + ",\"groups\":" + (!String.IsNullOrEmpty(textBlock7.Text) ? "[\"" + textBlock7.Text + "\"]" : "null") + ",\"hotelName\":null,\"id\":\"" + DateTime.Now.ToString("ddMMyyyyHHmmss") + "\",\"mac\":null,\"room\":null,\"zone\":null}}";
             }
-            p.BeginProduce(operationType, new Message<Null, string>
+            p.Produce(operationType, new Message<Null, string>
             {
                 Value = jsonmessage
             }, handler);
