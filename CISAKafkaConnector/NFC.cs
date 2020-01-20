@@ -14,7 +14,7 @@ namespace CISAKafkaConnector
         int hContext;
         int Protocol;
         public bool connActive = false;
-        //string readername = "ACS ACR122 0"; // Change depending on reader
+        //string readername = "ACS ACR122 0"; // Change depending on reader // Testing Git Visual Studio Community.
         string readername = ""; // Will change depending on connected reader/writer device
         public byte[] SendBuff = new byte[263];
         public byte[] RecvBuff = new byte[263];
